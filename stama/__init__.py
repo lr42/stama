@@ -1,7 +1,7 @@
 """A library for creating state machines"""
 
 from threading import RLock
-from typing import Callable, TypeVar
+from typing import TypeVar
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,20 +41,20 @@ class Event:
 
         self._description: str = description
 
+        self.on_before = lambda: logger.debug(
+            "No action set for before %s transition.", self
+        )
+        self.on_during = lambda: logger.debug(
+            "No action set for during %s transition.", self
+        )
+        self.on_after = lambda: logger.debug(
+            "No action set for after %s transition.", self
+        )
+
         Event.all_events_globally.append(self)
 
     def __repr__(self):
         return "<Event: " + self._name + ">"
-
-    def on_before(self):
-        """Run before a transition triggered by this event happens"""
-        logger.warning("Before transition: %s", self)
-
-    def on_between(self):
-        logger.warning("Between states on transition: %s", self)
-
-    def on_after(self):
-        logger.warning("After transition: %s", self)
 
 
 class State:
@@ -79,57 +79,16 @@ class State:
 
         self.transitions: dict["Event", "State"] = {}
 
-        self._on_entry_function: Callable = lambda: print(
-            "Entering " + str(self)
+        self.on_entry = lambda: logger.debug("No action set for entering %s.", self)
+        self.on_exit = lambda: logger.debug("No action set for exiting %s.", self)
+        self.enforce = lambda: logger.debug(
+            "Nothing to enforce on %s.", self
         )
-
-        self._on_exit_function: Callable = lambda: print(
-            "Exiting " + str(self)
-        )
-
-        self._enforce_function: Callable = lambda: print(
-            "Exiting " + str(self)
-        )
-
-        self.on_entry = lambda: print("Entering " + str(self))
-        self.on_exit = lambda: print("Exiting " + str(self))
-        self.enforce = lambda: print(
-            "Nothing to enforce on " + str(self)
-        )
-
-        self.function_correlation = {
-            "on_entry": [
-                self._default_on_entry,
-                self._on_entry_function,
-            ],
-            "on_exit": [
-                self._default_on_entry,
-                self._on_entry_function,
-            ],
-        }
 
         State.all_states_globally.append(self)
 
     def __repr__(self):
         return "<State: " + self.name + ">"
-
-    def _default_on_entry(self):
-        """Run when the state is entered into"""
-        self._on_entry_function()
-
-    def _default_on_exit(self):
-        """Run when the state is exited out of"""
-        self._on_exit_function()
-
-    def _default_enforce(self):
-        """Run when the state is exited out of"""
-        self._enforce_function()
-
-    # TODO Refactor this, since we'll be doing it often.
-    def set_on_entry_function(self, function: Callable[[], None]):
-        """Changes the function that is run on entry into a state"""
-        self.on_entry = self._default_on_entry
-        self._on_entry_function = function
 
 
 class StateMachine:
@@ -138,7 +97,9 @@ class StateMachine:
     def __init__(self, starting_state: State):
         self._starting_state = starting_state
         self._current_state = self._starting_state
-        self.enforce = self._default_enforce
+        self.enforce = lambda: logger.debug(
+            "Nothing to enforce on %s.", self
+        )
         self._lock = RLock()
 
     @property
@@ -158,25 +119,34 @@ class StateMachine:
                 if handling_state.parent is not None:
                     handling_state = handling_state.parent  # type: ignore
                 else:
-                    raise Exception(
-                        "Pickles TK"
-                    )  # pylint: disable=broad-exception-raised
+                    raise Exception(  # pylint: disable=broad-exception-raised
+                        "TK"
+                    )
             destination_state: "State" = handling_state.transitions[
                 event
             ]
+            logger.debug(
+                "Transition start: %s -> %s -> %s",
+                self.current_state,
+                event,
+                destination_state,
+            )
 
             # ! Use the origin state and destination state to find the shared
             # !  parent.
             origin_ancestry: list["State"] = _get_ancestry_list(
                 self._current_state
             )
+            logger.debug("origin_ancestry: %s", origin_ancestry)
             destination_ancestry: list["State"] = _get_ancestry_list(
                 destination_state
             )
+            logger.debug("destination_ancestry: %s", destination_ancestry)
 
             common_parent_state: "State" | None = _get_common_parent(
                 origin_ancestry, destination_ancestry
             )
+            logger.debug("common_parent_state: %s", common_parent_state)
 
             # ! When you've found a state that handles the event, do the
             # !  following:
@@ -196,15 +166,18 @@ class StateMachine:
                 st.on_exit()
 
             # ! Run Event.on_between().
-            event.on_between()
+            event.on_during()
+
+            origin_state = self._current_state
+            self._current_state = destination_state
 
             # ! Run on_entry() for the first child of the shared parent state
             # !  down to the destination state.
             if common_parent_state is None:
-                uncommon_destination_ancestors = origin_ancestry[:]
+                uncommon_destination_ancestors = destination_ancestry[:]
             else:
-                uncommon_destination_ancestors = origin_ancestry[
-                    : origin_ancestry.index(common_parent_state)
+                uncommon_destination_ancestors = destination_ancestry[
+                    : destination_ancestry.index(common_parent_state)
                 ]
             uncommon_destination_ancestors.reverse()
             for st in uncommon_destination_ancestors:
@@ -220,21 +193,33 @@ class StateMachine:
                 st.enforce()
             self.enforce()
 
-    def _default_enforce(self):
-        logger.warning("Enforcing state machine")
+            logger.info(
+                "Transition done: %s -> %s -> %s",
+                origin_state,
+                event,
+                destination_state,
+            )
 
 
-cycle = Event()
-print(cycle)
-my_state = State()
-print(my_state.name)
-print(State.all_states_globally)
-print(my_state.all_states_globally)
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    cycle = Event()
+    print(cycle)
+    my_state = State()
+    print(my_state.name)
+    print(State.all_states_globally)
+    print(my_state.all_states_globally)
 
-my_state.on_entry()
-my_state.on_entry = lambda: print("cowabunga")
-my_state.on_entry()
-my_state.set_on_entry_function(lambda: print("tubular??"))
-my_state.on_entry()
+    my_state.on_entry()
+    my_state.on_entry = lambda: print("cowabunga")
+    my_state.on_entry()
 
-# print(my_state.on_entry == State.on_entry)
+    def my_new_on_entry():
+        """Nonya biznis"""
+        print("cows")
+        print("pigs")
+
+    my_state.on_entry = my_new_on_entry
+    my_state.on_entry()
+
+    # print(my_state.on_entry == State.on_entry)
