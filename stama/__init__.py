@@ -25,7 +25,7 @@ def _get_common_parent(x: list[T], y: list[T]) -> T | None:
     return None
 
 
-class Event:
+class Event:  # pylint: disable=too-few-public-methods
     """An event which is passed to a state machine"""
 
     all_events_globally: list["Event"] = []
@@ -68,19 +68,26 @@ class State:
         self,
         name: str | None = None,
         description: str = "",
-        parent=None,
+        parent=None,  # TODO Union type
     ):
         self.name: str | None = name
         if self.name is None:
             self.name = "S" + str(len(State.all_states_globally))
 
         self.description: str = description
-        self.parent: "State" | None = parent
+
+        if parent is not None:
+            self.add_to_super_state(parent)
+        self._parent = parent
 
         self.transitions: dict["Event", "State"] = {}
 
-        self.on_entry = lambda: logger.debug("No action set for entering %s.", self)
-        self.on_exit = lambda: logger.debug("No action set for exiting %s.", self)
+        self.on_entry = lambda: logger.debug(
+            "No action set for entering %s.", self
+        )
+        self.on_exit = lambda: logger.debug(
+            "No action set for exiting %s.", self
+        )
         self.enforce = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
@@ -89,6 +96,44 @@ class State:
 
     def __repr__(self):
         return "<State: " + self.name + ">"
+
+    @property
+    def parent(self):
+        """The super-state that this state belongs to"""
+        return self._parent
+
+    def make_super_state(self, starting_state=None):
+        """Make this state into a SuperState"""
+        self.__class__ = SuperState
+        # pylint: disable=no-member
+        self._init_super_state(starting_state)
+
+    def add_to_super_state(self, parent):
+        """Add this state as a sub-state to a super-state"""
+        if not isinstance(parent, SuperState):
+            parent.make_super_state(starting_state=self)
+        self._parent = parent
+
+
+class SuperState(State):
+    """A state which can contain other states as sub-states"""
+
+    # TODO Keep track of every sub-state added
+    def __init__(
+        self,
+        name: str | None = None,
+        description: str = "",
+        parent=None,  # TODO Union type
+        starting_state=None,  # TODO Union type
+    ):
+        super().__init__(name, description, parent)
+        self._init_super_state(starting_state)
+
+    def _init_super_state(self, starting_state=None):
+        self._starting_state = starting_state
+        self._shallow_history = None
+        self._deep_history = None
+        self._preferred_entry_state = "start"
 
 
 class StateMachine:
@@ -119,12 +164,15 @@ class StateMachine:
                 if handling_state.parent is not None:
                     handling_state = handling_state.parent  # type: ignore
                 else:
-                    raise Exception(  # pylint: disable=broad-exception-raised
-                        "TK"
-                    )
+                    # TODO Create a proper exception
+                    raise Exception("TK")
             destination_state: "State" = handling_state.transitions[
                 event
             ]
+            # TODO Add checking to see if the destination state is a
+            #  super state, and if so, point to the true destination
+            #  state. Maybe use `proxy_destination_state` and
+            #  `true_destination_state`?
             logger.debug(
                 "Transition start: %s -> %s -> %s",
                 self.current_state,
@@ -138,10 +186,13 @@ class StateMachine:
                 self._current_state
             )
             logger.debug("origin_ancestry: %s", origin_ancestry)
+
             destination_ancestry: list["State"] = _get_ancestry_list(
                 destination_state
             )
-            logger.debug("destination_ancestry: %s", destination_ancestry)
+            logger.debug(
+                "destination_ancestry: %s", destination_ancestry
+            )
 
             common_parent_state: "State" | None = _get_common_parent(
                 origin_ancestry, destination_ancestry
@@ -150,7 +201,7 @@ class StateMachine:
 
             # ! When you've found a state that handles the event, do the
             # !  following:
-            # ! Check guard.
+            # TODO Check guard.
             # ! Run Event.on_before().
             event.on_before()
 
