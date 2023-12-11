@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+class SMEventNotHandledException(Exception):
+    """The current State does not have a transition defined for this Event
+    (nor do any of it's SuperStates)
+    """
+
+
 def _get_ancestry_list(state: "State") -> list["State"]:
     ancestry_list: list["State"] = []
     while state.parent is not None:
@@ -170,8 +176,12 @@ class StateMachine:
                 if handling_state.parent is not None:
                     handling_state = handling_state.parent  # type: ignore
                 else:
-                    # TODO Create a proper exception
-                    raise Exception("TK")
+                    raise EventNotHandledException(
+                        "No transition defined for "
+                        + str(event)
+                        + " in "
+                        + str(self._current_state)
+                    )
             destination_state: "State" = handling_state.transitions[
                 event
             ]
