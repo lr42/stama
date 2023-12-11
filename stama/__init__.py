@@ -1,7 +1,10 @@
 """A library for creating state machines"""
 
 from threading import RLock
-from typing import TypeVar
+from typing import (
+    Union,
+    TypeVar,
+)  # TODO Since I need Union anyway, should I just use Union everywhere instead of `|`?
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,7 +71,7 @@ class State:
         self,
         name: str | None = None,
         description: str = "",
-        parent=None,  # TODO Union type
+        parent: Union["State", None] = None,
     ):
         self.name: str | None = name
         if self.name is None:
@@ -123,8 +126,8 @@ class SuperState(State):
         self,
         name: str | None = None,
         description: str = "",
-        parent=None,  # TODO Union type
-        starting_state=None,  # TODO Union type
+        parent: Union[State, None] = None,
+        starting_state: Union[State, None] = None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
