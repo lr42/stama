@@ -63,7 +63,7 @@ class State:
         self,
         name: str = "",
         description: str = "",
-        parent: Union["State", None] = None,
+        parent: Union["SuperState", "State", None] = None,
     ):
         self.name: str = name
         if self.name == "":
@@ -73,7 +73,7 @@ class State:
 
         if parent is not None:
             self.add_to_super_state(parent)
-        self._parent: Union["State", None] = parent
+        self._parent = parent
 
         self.transitions: dict["Event", "State"] = {}
 
@@ -97,13 +97,15 @@ class State:
         """The super-state that this state belongs to"""
         return self._parent
 
+    # Don't add type hints to this function.  The `__class__`
+    #  reassignment makes type checking not work very well here.
     def make_super_state(self, starting_state=None):
         """Make this state into a SuperState"""
         self.__class__ = SuperState
         # pylint: disable=no-member
         self._init_super_state(starting_state)
 
-    def add_to_super_state(self, parent):
+    def add_to_super_state(self, parent: Union["SuperState", "State"]):
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
             parent.make_super_state(starting_state=self)
@@ -175,7 +177,7 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
-    def process_event(self, event: Event):
+    def process_event(self, event: Event) -> None:
         """Change to the next state, based on the event passed"""
         with self._lock:
             handling_state = self._current_state
