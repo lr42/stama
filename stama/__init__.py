@@ -5,7 +5,7 @@ from typing import (
     Union,
     TypeVar,
     Callable,
-)  # TODO Since I need Union anyway, should I just use Union everywhere instead of `|`?
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -76,12 +76,12 @@ class State:
 
     def __init__(
         self,
-        name: str | None = None,
+        name: str = "",
         description: str = "",
         parent: Union["State", None] = None,
     ):
-        self.name: str | None = name
-        if self.name is None:
+        self.name: str = name
+        if self.name == "":
             self.name = "S" + str(len(State.all_states_globally))
 
         self.description: str = description
@@ -130,7 +130,7 @@ class SuperState(State):
 
     def __init__(
         self,
-        name: str | None = None,
+        name: str = "",
         description: str = "",
         parent: Union[State, None] = None,
         starting_state: Union[State, None] = None,
@@ -151,13 +151,39 @@ class SuperState(State):
 class StateMachine:
     """Stores current state, and changes it based on events"""
 
-    def __init__(self, starting_state: State):
+    all_machines_globally: list["StateMachine"] = []
+
+    def __init__(
+        self,
+        starting_state: State,
+        name: str = "",
+        description: str = "",
+    ):
+        self.name: str = name
+        if self.name == "":
+            self.name = "M" + str(
+                len(StateMachine.all_machines_globally)
+            )
+
+        self.description = description
+
         self._starting_state: State = starting_state
         self._current_state: State = self._starting_state
+
         self.enforce: Callable = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
+
         self._lock: RLock = RLock()
+
+    def __repr__(self):
+        return (
+            "<StateMachine: "
+            + self.name
+            + " ("
+            + str(self.current_state)
+            + ")>"
+        )
 
     @property
     def current_state(self):
@@ -176,7 +202,7 @@ class StateMachine:
                 if handling_state.parent is not None:
                     handling_state = handling_state.parent  # type: ignore
                 else:
-                    raise EventNotHandledException(
+                    raise SMEventNotHandledException(
                         "No transition defined for "
                         + str(event)
                         + " in "
@@ -191,7 +217,7 @@ class StateMachine:
             #  `true_destination_state`?
             logger.debug(
                 "Transition start: %s -> %s -> %s",
-                self.current_state,
+                self,
                 event,
                 destination_state,
             )
@@ -264,7 +290,7 @@ class StateMachine:
                 "Transition done: %s -> %s -> %s",
                 origin_state,
                 event,
-                destination_state,
+                self,
             )
 
 

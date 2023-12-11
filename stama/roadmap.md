@@ -4,7 +4,6 @@
  Features
 ------------------------------------------------------------------------
 
-- [ ] Add a name and description to StateMachine.
 - [ ] Add functions to set different actions on States.
 - [ ] Add functions to add States to StateMachines.
 - [ ] Add a way to make Events specific to a StateMachine?
@@ -37,6 +36,22 @@
 
 - [ ] Do unit testing.
 - [ ] Do unit testing for hierarchical state machines.
-- [ ] I need to add an indicator that a state is a super state, a
+- [ ] Since I need Union anyway, should I just use Union everywhere
+  instead of `|`?
+
+
+ Done
+========================================================================
+
+ Features
+------------------------------------------------------------------------
+
+- [x] Add a name and description to StateMachine.
+
+
+ Maintenance
+------------------------------------------------------------------------
+
+- [x] I need to add an indicator that a state is a super state, a
   starting state, history, deep history, and the preferred entry state
   for super states.
