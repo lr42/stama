@@ -4,6 +4,7 @@ from threading import RLock
 from typing import (
     Union,
     TypeVar,
+    Callable,
 )  # TODO Since I need Union anyway, should I just use Union everywhere instead of `|`?
 import logging
 
@@ -44,13 +45,13 @@ class Event:  # pylint: disable=too-few-public-methods
 
         self._description: str = description
 
-        self.on_before = lambda: logger.debug(
+        self.on_before: Callable = lambda: logger.debug(
             "No action set for before %s transition.", self
         )
-        self.on_during = lambda: logger.debug(
+        self.on_during: Callable = lambda: logger.debug(
             "No action set for during %s transition.", self
         )
-        self.on_after = lambda: logger.debug(
+        self.on_after: Callable = lambda: logger.debug(
             "No action set for after %s transition.", self
         )
 
@@ -81,17 +82,17 @@ class State:
 
         if parent is not None:
             self.add_to_super_state(parent)
-        self._parent = parent
+        self._parent: Union["State", None] = parent
 
         self.transitions: dict["Event", "State"] = {}
 
-        self.on_entry = lambda: logger.debug(
+        self.on_entry: Callable = lambda: logger.debug(
             "No action set for entering %s.", self
         )
-        self.on_exit = lambda: logger.debug(
+        self.on_exit: Callable = lambda: logger.debug(
             "No action set for exiting %s.", self
         )
-        self.enforce = lambda: logger.debug(
+        self.enforce: Callable = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
@@ -121,7 +122,6 @@ class State:
 class SuperState(State):
     """A state which can contain other states as sub-states"""
 
-    # TODO Keep track of every sub-state added
     def __init__(
         self,
         name: str | None = None,
@@ -132,23 +132,26 @@ class SuperState(State):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
 
-    def _init_super_state(self, starting_state=None):
-        self._starting_state = starting_state
-        self._shallow_history = None
-        self._deep_history = None
-        self._preferred_entry_state = "start"
+    def _init_super_state(self, starting_state: State | None = None):
+        self._starting_state: State | None = starting_state
+        self._shallow_history: State | None = None
+        self._deep_history: State | None = None
+        self._preferred_entry_state: str = "start"
+        self._child_states: list[State] = []
+        if starting_state is not None:
+            self._child_states.append(starting_state)
 
 
 class StateMachine:
     """Stores current state, and changes it based on events"""
 
     def __init__(self, starting_state: State):
-        self._starting_state = starting_state
-        self._current_state = self._starting_state
-        self.enforce = lambda: logger.debug(
+        self._starting_state: State = starting_state
+        self._current_state: State = self._starting_state
+        self.enforce: Callable = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
-        self._lock = RLock()
+        self._lock: RLock = RLock()
 
     @property
     def current_state(self):
