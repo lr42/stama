@@ -1,18 +1,10 @@
 """A library for creating state machines"""
 
 import logging
-from typing import (
-    Union,
-    TypeVar,
-    Callable,
-    Final,
-)
 from threading import RLock
 
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class SMEventNotHandledException(Exception):
@@ -24,26 +16,26 @@ class SMEventNotHandledException(Exception):
 class Event:  # pylint: disable=too-few-public-methods
     """An event which is passed to a state machine"""
 
-    all_events_globally: list["Event"] = []
+    all_events_globally = []
 
     def __init__(
         self,
-        name: str = "",
-        description: str = "",
+        name = "",
+        description = "",
     ):
-        self._name: str | None = name
+        self._name = name
         if self._name is None:
             self._name = "E" + str(len(State.all_states_globally))
 
-        self._description: str = description
+        self._description = description
 
-        self.on_before_transition: Callable = lambda: logger.debug(
+        self.on_before_transition = lambda: logger.debug(
             "No action set for before %s transition.", self
         )
-        self.on_during_transition: Callable = lambda: logger.debug(
+        self.on_during_transition = lambda: logger.debug(
             "No action set for during %s transition.", self
         )
-        self.on_after_transition: Callable = lambda: logger.debug(
+        self.on_after_transition = lambda: logger.debug(
             "No action set for after %s transition.", self
         )
 
@@ -58,33 +50,33 @@ class State:
 
     # pylint: disable=too-many-instance-attributes
 
-    all_states_globally: list["State"] = []
+    all_states_globally = []
 
     def __init__(
         self,
-        name: str = "",
-        description: str = "",
-        parent: Union["SuperState", "State", None] = None,
+        name = "",
+        description = "",
+        parent = None,
     ):
-        self.name: str = name
+        self.name = name
         if self.name == "":
             self.name = "S" + str(len(State.all_states_globally))
 
-        self.description: str = description
+        self.description = description
 
         if parent is not None:
             self.add_to_super_state(parent)
         self._parent = parent
 
-        self.transitions: dict["Event", "State"] = {}
+        self.transitions = {}
 
-        self.on_entry: Callable = lambda: logger.debug(
+        self.on_entry = lambda: logger.debug(
             "No action set for entering %s.", self
         )
-        self.on_exit: Callable = lambda: logger.debug(
+        self.on_exit = lambda: logger.debug(
             "No action set for exiting %s.", self
         )
-        self.enforce: Callable = lambda: logger.debug(
+        self.enforce = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
@@ -106,16 +98,16 @@ class State:
         # pylint: disable=no-member
         self._init_super_state(starting_state)
 
-    def add_to_super_state(self, parent: Union["SuperState", "State"]):
+    def add_to_super_state(self, parent):
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
             parent.make_super_state(starting_state=self)
         self._parent = parent
 
 
-START: Final[str] = "start"
-SHALLOW_HISTORY: Final[str] = "shallow history"
-DEEP_HISTORY: Final[str] = "deep history"
+START = "start"
+SHALLOW_HISTORY = "shallow history"
+DEEP_HISTORY = "deep history"
 
 
 class SuperState(State):
@@ -123,20 +115,20 @@ class SuperState(State):
 
     def __init__(
         self,
-        starting_state: State,
-        name: str = "",
-        description: str = "",
-        parent: Union[State, None] = None,
+        starting_state,
+        name = "",
+        description = "",
+        parent = None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
 
-    def _init_super_state(self, starting_state: State):
-        self._starting_state: "SuperState" | State = starting_state
-        self._shallow_history: "SuperState" | State | None = None
-        self._deep_history: State | None = None
-        self._preferred_entry: str = START
-        self._child_states: list[State] = []
+    def _init_super_state(self, starting_state):
+        self._starting_state = starting_state
+        self._shallow_history = None
+        self._deep_history = None
+        self._preferred_entry = START
+        self._child_states = []
         if starting_state is not None:
             self._child_states.append(starting_state)
 
@@ -144,15 +136,15 @@ class SuperState(State):
 class StateMachine:
     """Stores current state, and changes it based on events"""
 
-    all_machines_globally: list["StateMachine"] = []
+    all_machines_globally = []
 
     def __init__(
         self,
-        starting_state: State,
-        name: str = "",
-        description: str = "",
+        starting_state,
+        name = "",
+        description = "",
     ):
-        self.name: str = name
+        self.name = name
         if self.name == "":
             self.name = "M" + str(
                 len(StateMachine.all_machines_globally)
@@ -160,14 +152,14 @@ class StateMachine:
 
         self.description = description
 
-        self._starting_state: State = starting_state
-        self._current_state: State = self._starting_state
+        self._starting_state = starting_state
+        self._current_state = self._starting_state
 
-        self.enforce: Callable = lambda: logger.debug(
+        self.enforce = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
-        self._lock: RLock = RLock()
+        self._lock = RLock()
 
     def __repr__(self):
         return "<SMachine: " + self.name + ">"
@@ -177,7 +169,7 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
-    def process_event(self, event: Event) -> None:
+    def process_event(self, event):
         """Change to the next state, based on the event passed"""
         with self._lock:
             handling_state = self._current_state
@@ -191,14 +183,14 @@ class StateMachine:
                         + " in "
                         + str(self._current_state)
                     )
-            proxy_destination: SuperState | State | None = (
+            proxy_destination = (
                 handling_state.transitions[event]
             )
 
             # TODO Handle a None transition.
 
             # TODO I think this would work better refactored into a function.
-            true_destination: SuperState | State = proxy_destination
+            true_destination = proxy_destination
             while isinstance(true_destination, SuperState):
                 if true_destination._preferred_entry == START:
                     true_destination = true_destination._starting_state
@@ -215,19 +207,19 @@ class StateMachine:
                 true_destination,
             )
 
-            origin_ancestry: list[SuperState] = _get_ancestors(
+            origin_ancestry = _get_ancestors(
                 self._current_state
             )
             logger.debug("origin_ancestry: %s", origin_ancestry)
 
-            destination_ancestry: list[SuperState] = _get_ancestors(
+            destination_ancestry = _get_ancestors(
                 proxy_destination
             )
             logger.debug(
                 "destination_ancestry: %s", destination_ancestry
             )
 
-            common_ancestor: SuperState | None = _get_common_ancestor(
+            common_ancestor = _get_common_ancestor(
                 origin_ancestry, destination_ancestry
             )
             logger.debug("common_ancestor: %s", common_ancestor)
@@ -244,7 +236,7 @@ class StateMachine:
                 ]
 
             self._current_state.on_exit()
-            child_state: State = self._current_state
+            child_state = self._current_state
             for state in uncommon_origin_ancestors:
                 state.on_exit()
                 # TODO Set the shallow and deep histories
@@ -284,15 +276,15 @@ class StateMachine:
             )
 
 
-def _get_ancestors(state: State) -> list[SuperState]:
-    ancestry_list: list[SuperState] = []
+def _get_ancestors(state):
+    ancestry_list = []
     while state.parent is not None:
         ancestry_list.append(state.parent)
         state = state.parent  # type: ignore
     return ancestry_list
 
 
-def _get_common_ancestor(x: list[T], y: list[T]) -> T | None:
+def _get_common_ancestor(x, y):
     for i in x:
         if i in y:
             return i
