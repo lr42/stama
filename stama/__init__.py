@@ -5,6 +5,7 @@ from typing import (
     Union,
     TypeVar,
     Callable,
+    Final,
 )
 from threading import RLock
 
@@ -27,7 +28,7 @@ class Event:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        name: str | None = None,
+        name: str = "",
         description: str = "",
     ):
         self._name: str | None = name
@@ -99,7 +100,7 @@ class State:
 
     # Don't add type hints to this function.  The `__class__`
     #  reassignment makes type checking not work very well here.
-    def make_super_state(self, starting_state=None):
+    def make_super_state(self, starting_state):
         """Make this state into a SuperState"""
         self.__class__ = SuperState
         # pylint: disable=no-member
@@ -112,24 +113,29 @@ class State:
         self._parent = parent
 
 
+START: Final[str] = "start"
+SHALLOW_HISTORY: Final[str] = "shallow history"
+DEEP_HISTORY: Final[str] = "deep history"
+
+
 class SuperState(State):
     """A state which can contain other states as sub-states"""
 
     def __init__(
         self,
+        starting_state: State,
         name: str = "",
         description: str = "",
         parent: Union[State, None] = None,
-        starting_state: Union[State, None] = None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
 
-    def _init_super_state(self, starting_state: State | None = None):
-        self._starting_state: State | None = starting_state
-        self._shallow_history: State | None = None
+    def _init_super_state(self, starting_state: State):
+        self._starting_state: "SuperState" | State = starting_state
+        self._shallow_history: "SuperState" | State | None = None
         self._deep_history: State | None = None
-        self._preferred_entry_state: str = "start"
+        self._preferred_entry: str = START
         self._child_states: list[State] = []
         if starting_state is not None:
             self._child_states.append(starting_state)
@@ -185,18 +191,28 @@ class StateMachine:
                         + " in "
                         + str(self._current_state)
                     )
-            destination_state: State = handling_state.transitions[event]
-            # TODO Add checking to see if the destination state is a
-            #  super state, and if so, point to the true destination
-            #  state. Maybe use `proxy_destination_state` and
-            #  `true_destination_state`?
+            proxy_destination: SuperState | State | None = (
+                handling_state.transitions[event]
+            )
+
+            # TODO Handle a None transition.
+
+            # TODO I think this would work better refactored into a function.
+            true_destination: SuperState | State = proxy_destination
+            while isinstance(true_destination, SuperState):
+                if true_destination._preferred_entry == START:
+                    true_destination = true_destination._starting_state
+                if true_destination._preferred_entry == DEEP_HISTORY:
+                    true_destination = true_destination._deep_history
+                if true_destination._preferred_entry == SHALLOW_HISTORY:
+                    true_destination = true_destination._shallow_history
 
             logger.debug(
                 "%s: Transition start: %s --> %s --> %s",
                 self,
                 self._current_state,
                 event,
-                destination_state,
+                true_destination,
             )
 
             origin_ancestry: list[SuperState] = _get_ancestors(
@@ -205,7 +221,7 @@ class StateMachine:
             logger.debug("origin_ancestry: %s", origin_ancestry)
 
             destination_ancestry: list[SuperState] = _get_ancestors(
-                destination_state
+                proxy_destination
             )
             logger.debug(
                 "destination_ancestry: %s", destination_ancestry
@@ -228,13 +244,18 @@ class StateMachine:
                 ]
 
             self._current_state.on_exit()
+            child_state: State = self._current_state
             for state in uncommon_origin_ancestors:
                 state.on_exit()
+                # TODO Set the shallow and deep histories
+                state._deep_history = origin_state
+                state._shallow_history = child_state
+                child_state = state
 
             event.on_during_transition()
 
             origin_state = self._current_state
-            self._current_state = destination_state
+            self._current_state = proxy_destination
 
             if common_ancestor is None:
                 uncommon_destination_ancestors = destination_ancestry[:]

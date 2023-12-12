@@ -38,6 +38,8 @@
 - [ ] Do unit testing for hierarchical state machines.
 - [ ] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
+- [ ] Refactor big ole' functions and methods into smaller
+  ones.  (Especially `process_event()`.)
 
 
  Done
