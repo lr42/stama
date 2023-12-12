@@ -203,32 +203,35 @@ class StateMachine:
                 destination_state,
             )
 
-            origin_ancestry: list[State] = _get_ancestry_list(
+            origin_ancestry: list[SuperState] = _get_ancestors(
                 self._current_state
             )
             logger.debug("origin_ancestry: %s", origin_ancestry)
 
-            destination_ancestry: list[State] = _get_ancestry_list(
+            destination_ancestry: list[SuperState] = _get_ancestors(
                 destination_state
             )
             logger.debug(
                 "destination_ancestry: %s", destination_ancestry
             )
 
-            common_parent: State | None = _get_common_parent(
+            common_ancestor: SuperState | None = _get_common_ancestor(
                 origin_ancestry, destination_ancestry
             )
-            logger.debug("common_parent: %s", common_parent)
+            logger.debug("common_ancestor: %s", common_ancestor)
 
             # TODO Check guard.
+
             event.on_before_transition()
 
-            if common_parent is None:
+            if common_ancestor is None:
                 uncommon_origin_ancestors = origin_ancestry[:]
             else:
                 uncommon_origin_ancestors = origin_ancestry[
-                    : origin_ancestry.index(common_parent)
+                    : origin_ancestry.index(common_ancestor)
                 ]
+
+            self._current_state.on_exit()
             for state in uncommon_origin_ancestors:
                 state.on_exit()
 
@@ -237,15 +240,17 @@ class StateMachine:
             origin_state = self._current_state
             self._current_state = destination_state
 
-            if common_parent is None:
+            if common_ancestor is None:
                 uncommon_destination_ancestors = destination_ancestry[:]
             else:
                 uncommon_destination_ancestors = destination_ancestry[
-                    : destination_ancestry.index(common_parent)
+                    : destination_ancestry.index(common_ancestor)
                 ]
             uncommon_destination_ancestors.reverse()
+
             for state in uncommon_destination_ancestors:
                 state.on_entry()
+            self._current_state.on_entry()
 
             event.on_after_transition()
 
@@ -261,16 +266,15 @@ class StateMachine:
             )
 
 
-def _get_ancestry_list(state: State) -> list[State]:
-    ancestry_list: list[State] = []
+def _get_ancestors(state: State) -> list[SuperState]:
+    ancestry_list: list[SuperState] = []
     while state.parent is not None:
-        ancestry_list.append(state)
+        ancestry_list.append(state.parent)
         state = state.parent  # type: ignore
-    ancestry_list.append(state)
     return ancestry_list
 
 
-def _get_common_parent(x: list[T], y: list[T]) -> T | None:
+def _get_common_ancestor(x: list[T], y: list[T]) -> T | None:
     for i in x:
         if i in y:
             return i
