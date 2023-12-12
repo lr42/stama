@@ -164,13 +164,7 @@ class StateMachine:
         self._lock: RLock = RLock()
 
     def __repr__(self):
-        return (
-            "<StateMachine: "
-            + self.name
-            + " ("
-            + str(self.current_state)
-            + ")>"
-        )
+        return "<SMachine: " + self.name + ">"
 
     @property
     def current_state(self):
@@ -196,9 +190,11 @@ class StateMachine:
             #  super state, and if so, point to the true destination
             #  state. Maybe use `proxy_destination_state` and
             #  `true_destination_state`?
+
             logger.debug(
-                "Transition start: %s -> %s -> %s",
+                "%s: Transition start: %s --> %s --> %s",
                 self,
+                self._current_state,
                 event,
                 destination_state,
             )
@@ -259,10 +255,11 @@ class StateMachine:
             self.enforce()
 
             logger.info(
-                "Transition done: %s -> %s -> %s",
+                "%s: Transition done: %s --> %s --> %s",
+                self,
                 origin_state,
                 event,
-                self,
+                self._current_state,
             )
 
 
