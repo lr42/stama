@@ -1,9 +1,9 @@
 """A library for creating state machines"""
 
 import logging
-from typing import(
-        List,
-        )
+from typing import (
+    List,
+)
 from threading import RLock
 
 
@@ -23,8 +23,8 @@ class Event:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        name = "",
-        description = "",
+        name="",
+        description="",
     ):
         self._name = name
         if self._name is None:
@@ -57,9 +57,9 @@ class State:
 
     def __init__(
         self,
-        name = "",
-        description = "",
-        parent = None,
+        name="",
+        description="",
+        parent=None,
     ):
         self.name = name
         if self.name == "":
@@ -119,9 +119,9 @@ class SuperState(State):
     def __init__(
         self,
         starting_state,
-        name = "",
-        description = "",
-        parent = None,
+        name="",
+        description="",
+        parent=None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
@@ -144,8 +144,8 @@ class StateMachine:
     def __init__(
         self,
         starting_state,
-        name = "",
-        description = "",
+        name="",
+        description="",
     ):
         self.name = name
         if self.name == "":
@@ -186,9 +186,7 @@ class StateMachine:
                         + " in "
                         + str(self._current_state)
                     )
-            proxy_destination = (
-                handling_state.transitions[event]
-            )
+            proxy_destination = handling_state.transitions[event]
 
             # TODO Handle a None transition.
 
@@ -210,14 +208,10 @@ class StateMachine:
                 true_destination,
             )
 
-            origin_ancestry = _get_ancestors(
-                self._current_state
-            )
+            origin_ancestry = _get_ancestors(self._current_state)
             logger.debug("origin_ancestry: %s", origin_ancestry)
 
-            destination_ancestry = _get_ancestors(
-                proxy_destination
-            )
+            destination_ancestry = _get_ancestors(proxy_destination)
             logger.debug(
                 "destination_ancestry: %s", destination_ancestry
             )
