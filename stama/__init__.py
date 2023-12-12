@@ -1,6 +1,9 @@
 """A library for creating state machines"""
 
 import logging
+from typing import(
+        List,
+        )
 from threading import RLock
 
 
@@ -16,7 +19,7 @@ class SMEventNotHandledException(Exception):
 class Event:  # pylint: disable=too-few-public-methods
     """An event which is passed to a state machine"""
 
-    all_events_globally = []
+    all_events_globally: List["Event"] = []
 
     def __init__(
         self,
@@ -50,7 +53,7 @@ class State:
 
     # pylint: disable=too-many-instance-attributes
 
-    all_states_globally = []
+    all_states_globally: List["State"] = []
 
     def __init__(
         self,
@@ -136,7 +139,7 @@ class SuperState(State):
 class StateMachine:
     """Stores current state, and changes it based on events"""
 
-    all_machines_globally = []
+    all_machines_globally: List["StateMachine"] = []
 
     def __init__(
         self,
