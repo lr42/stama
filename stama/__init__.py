@@ -105,6 +105,9 @@ class State:
     def add_to_super_state(self, parent: "SuperState"):
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
+            logger.warning(
+                "Automatically converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code."
+            )
             parent.make_super_state(starting_state=self)
         self._parent = parent
 
