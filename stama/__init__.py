@@ -96,13 +96,13 @@ class State:
 
     # Don't add type hints to this function.  The `__class__`
     #  reassignment makes type checking not work very well here.
-    def make_super_state(self, starting_state: "State"):
+    def make_super_state(self, starting_state: "State") -> None:
         """Make this state into a SuperState"""
         self.__class__ = SuperState
         # pylint: disable=no-member
         self._init_super_state(starting_state)  # type: ignore
 
-    def add_to_super_state(self, parent: "SuperState"):
+    def add_to_super_state(self, parent: "SuperState") -> None:
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
             logger.warning(
@@ -176,7 +176,7 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
-    def process_event(self, event: Event):
+    def process_event(self, event: Event) -> None:
         """Change to the next state, based on the event passed"""
         with self._lock:
             handling_state = self._current_state

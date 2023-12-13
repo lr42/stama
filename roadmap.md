@@ -22,7 +22,14 @@
 - [ ] Add the ability to output a representation of a StateMachine as a
   PlantUML diagram.
 - [ ] Add the ability to output a representation of a StateMachine as a
+  Graphviz (dot) file?
+- [ ] Add the ability to output a representation of a StateMachine as a
   state table.
+  	- As CSV?
+	- A LaTex?
+- [ ] Add a 'lenient' flag that lets a user upgrade a state?
+	- Would it be better to just pass a State to a SuperState, to get a
+	  new SuperState back, and then assign that as a new parent?
 
 
  Bugs
@@ -57,3 +64,5 @@
 - [x] I need to add an indicator that a state is a super state, a
   starting state, history, deep history, and the preferred entry state
   for super states.
+- [x] Handle 'internal' transitions, where the transition is set to
+  `None`.
