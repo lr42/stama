@@ -109,7 +109,7 @@ class State:
         self._parent = parent
 
 
-START = "start"
+STARTING_STATE = "starting state"
 SHALLOW_HISTORY = "shallow history"
 DEEP_HISTORY = "deep history"
 
@@ -131,7 +131,7 @@ class SuperState(State):
         self._starting_state = starting_state
         self._shallow_history = None
         self._deep_history = None
-        self._preferred_entry = START
+        self._preferred_entry = STARTING_STATE
         self._child_states = []
         if starting_state is not None:
             self._child_states.append(starting_state)
@@ -194,12 +194,21 @@ class StateMachine:
             # TODO I think this would work better refactored into a function.
             true_destination = proxy_destination
             while isinstance(true_destination, SuperState):
-                if true_destination._preferred_entry == START:
+                logger.warn(
+                    "%s is a SuperState, redirecting to the proper sub-state",
+                    true_destination,
+                )
+                if true_destination._preferred_entry == STARTING_STATE:
                     true_destination = true_destination._starting_state
-                if true_destination._preferred_entry == DEEP_HISTORY:
+                elif true_destination._preferred_entry == DEEP_HISTORY:
                     true_destination = true_destination._deep_history
-                if true_destination._preferred_entry == SHALLOW_HISTORY:
+                elif (
+                    true_destination._preferred_entry == SHALLOW_HISTORY
+                ):
                     true_destination = true_destination._shallow_history
+                logger.warn(
+                    "%s is the new true_destination", true_destination
+                )
 
             logger.debug(
                 "%s: Transition start: %s --> %s --> %s",
@@ -233,19 +242,21 @@ class StateMachine:
                     : origin_ancestry.index(common_ancestor)
                 ]
 
+            origin_state = self._current_state
+
             self._current_state.on_exit()
+
+            # Process uncommon ancestors
             child_state = self._current_state
             for state in uncommon_origin_ancestors:
                 state.on_exit()
-                # TODO Set the shallow and deep histories
                 state._deep_history = origin_state
                 state._shallow_history = child_state
                 child_state = state
 
             event.on_during_transition()
 
-            origin_state = self._current_state
-            self._current_state = proxy_destination
+            self._current_state = true_destination
 
             if common_ancestor is None:
                 uncommon_destination_ancestors = destination_ancestry[:]
