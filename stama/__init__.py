@@ -189,7 +189,13 @@ class StateMachine:
                     )
             proxy_destination = handling_state.transitions[event]
 
-            # TODO Handle a None transition.
+            if proxy_destination == None:
+                logger.debug(
+                    "%s handles %s internally, so no transition is done, and no actions are run.",
+                    self.current_state,
+                    event,
+                )
+                return
 
             # TODO I think this would work better refactored into a function.
             true_destination = proxy_destination
