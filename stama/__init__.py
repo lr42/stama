@@ -63,7 +63,7 @@ class State:
         parent: Optional["SuperState"] = None,
     ):
         self.name = name
-        if self.name == None:
+        if self.name is None:
             self.name = "S" + str(len(State.all_states_globally))
 
         self.description = description
@@ -152,7 +152,7 @@ class StateMachine:
         description: Optional[str] = None,
     ):
         self.name = name
-        if self.name == None:
+        if self.name is None:
             self.name = "M" + str(
                 len(StateMachine.all_machines_globally)
             )
@@ -192,7 +192,7 @@ class StateMachine:
                     )
             proxy_destination = handling_state.transitions[event]
 
-            if proxy_destination == None:
+            if proxy_destination is None:
                 logger.debug(
                     "%s handles %s internally, so no transition is done, and no actions are run.",
                     self.current_state,
@@ -203,10 +203,11 @@ class StateMachine:
             # TODO I think this would work better refactored into a function.
             true_destination = proxy_destination
             while isinstance(true_destination, SuperState):
-                logger.warn(
+                logger.warning(
                     "%s is a SuperState, redirecting to the proper sub-state",
                     true_destination,
                 )
+                # pylint: disable=protected-access
                 if true_destination._preferred_entry == STARTING_STATE:
                     true_destination = true_destination._starting_state
                 elif true_destination._preferred_entry == DEEP_HISTORY:
@@ -215,7 +216,7 @@ class StateMachine:
                     true_destination._preferred_entry == SHALLOW_HISTORY
                 ):
                     true_destination = true_destination._shallow_history
-                logger.warn(
+                logger.warning(
                     "%s is the new true_destination", true_destination
                 )
 
@@ -259,6 +260,7 @@ class StateMachine:
             child_state = self._current_state
             for state in uncommon_origin_ancestors:
                 state.on_exit()
+                # pylint: disable=protected-access
                 state._deep_history = origin_state
                 state._shallow_history = child_state
                 child_state = state
