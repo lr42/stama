@@ -3,6 +3,7 @@
 import logging
 from typing import (
     List,
+    Optional,
 )
 from threading import RLock
 
@@ -23,12 +24,12 @@ class Event:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        name="",
-        description="",
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
-        self._name = name
-        if self._name is None:
-            self._name = "E" + str(len(State.all_states_globally))
+        self.name = name
+        if self.name is None:
+            self.name = "E" + str(len(State.all_states_globally))
 
         self._description = description
 
@@ -45,7 +46,7 @@ class Event:  # pylint: disable=too-few-public-methods
         Event.all_events_globally.append(self)
 
     def __repr__(self):
-        return "<Event: " + self._name + ">"
+        return "<Event: " + self.name + ">"
 
 
 class State:
@@ -57,12 +58,12 @@ class State:
 
     def __init__(
         self,
-        name="",
-        description="",
-        parent=None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        parent: Optional["SuperState"] = None,
     ):
         self.name = name
-        if self.name == "":
+        if self.name == None:
             self.name = "S" + str(len(State.all_states_globally))
 
         self.description = description
@@ -71,7 +72,7 @@ class State:
             self.add_to_super_state(parent)
         self._parent = parent
 
-        self.transitions = {}
+        self.transitions: dict[Event, "State"] = {}
 
         self.on_entry = lambda: logger.debug(
             "No action set for entering %s.", self
@@ -95,13 +96,13 @@ class State:
 
     # Don't add type hints to this function.  The `__class__`
     #  reassignment makes type checking not work very well here.
-    def make_super_state(self, starting_state):
+    def make_super_state(self, starting_state: "State"):
         """Make this state into a SuperState"""
         self.__class__ = SuperState
         # pylint: disable=no-member
-        self._init_super_state(starting_state)
+        self._init_super_state(starting_state)  # type: ignore
 
-    def add_to_super_state(self, parent):
+    def add_to_super_state(self, parent: "SuperState"):
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
             parent.make_super_state(starting_state=self)
@@ -118,10 +119,10 @@ class SuperState(State):
 
     def __init__(
         self,
-        starting_state,
-        name="",
-        description="",
-        parent=None,
+        starting_state: State,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        parent: Optional["SuperState"] = None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
@@ -143,12 +144,12 @@ class StateMachine:
 
     def __init__(
         self,
-        starting_state,
-        name="",
-        description="",
+        starting_state: State,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         self.name = name
-        if self.name == "":
+        if self.name == None:
             self.name = "M" + str(
                 len(StateMachine.all_machines_globally)
             )
@@ -172,7 +173,7 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
-    def process_event(self, event):
+    def process_event(self, event: Event):
         """Change to the next state, based on the event passed"""
         with self._lock:
             handling_state = self._current_state
