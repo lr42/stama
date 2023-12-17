@@ -108,7 +108,9 @@ class State:
             logger.warning(
                 "Automatically converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code."
             )
-            parent.make_super_state(starting_state=self)
+            parent.make_super_state()
+        if parent.starting_state is None:
+            parent.starting_state = self
         self._parent = parent
 
 
@@ -122,16 +124,16 @@ class SuperState(State):
 
     def __init__(
         self,
-        starting_state: State,
         name: Optional[str] = None,
         description: Optional[str] = None,
         parent: Optional["SuperState"] = None,
+        starting_state: Optional[State] = None,
     ):
         super().__init__(name, description, parent)
         self._init_super_state(starting_state)
 
     def _init_super_state(self, starting_state):
-        self._starting_state = starting_state
+        self.starting_state = starting_state
         self._shallow_history = None
         self._deep_history = None
         self._preferred_entry = STARTING_STATE
@@ -209,7 +211,7 @@ class StateMachine:
                 )
                 # pylint: disable=protected-access
                 if true_destination._preferred_entry == STARTING_STATE:
-                    true_destination = true_destination._starting_state
+                    true_destination = true_destination.starting_state
                 elif true_destination._preferred_entry == DEEP_HISTORY:
                     true_destination = true_destination._deep_history
                 elif (
@@ -231,7 +233,7 @@ class StateMachine:
             origin_ancestry = _get_ancestors(self._current_state)
             logger.debug("origin_ancestry: %s", origin_ancestry)
 
-            destination_ancestry = _get_ancestors(proxy_destination)
+            destination_ancestry = _get_ancestors(true_destination)
             logger.debug(
                 "destination_ancestry: %s", destination_ancestry
             )

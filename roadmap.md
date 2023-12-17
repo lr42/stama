@@ -30,6 +30,7 @@
 - [ ] Add a 'lenient' flag that lets a user upgrade a state?
 	- Would it be better to just pass a State to a SuperState, to get a
 	  new SuperState back, and then assign that as a new parent?
+- [ ] Allow creating a state machine and all states and events from a JSON tree or something similar.
 
 
  Bugs
@@ -41,12 +42,16 @@
  Maintenance
 ------------------------------------------------------------------------
 
-- [ ] Do unit testing.
+- [ ] {IN PROGRESS} Do unit testing.
 - [ ] Do unit testing for hierarchical state machines.
 - [ ] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
 - [ ] Refactor big ole' functions and methods into smaller
   ones.  (Especially `process_event()`.)
+- [ ] Use an enum for substate selection?
+- [ ] Use `setup` and `teardown` functions inside of unit tests.
+	- If possible, it'd be nice to remove the need for a global variable
+	  as well.
 
 
  Done
