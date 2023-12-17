@@ -30,7 +30,8 @@
 - [ ] Add a 'lenient' flag that lets a user upgrade a state?
 	- Would it be better to just pass a State to a SuperState, to get a
 	  new SuperState back, and then assign that as a new parent?
-- [ ] Allow creating a state machine and all states and events from a JSON tree or something similar.
+- [ ] Allow creating a state machine and all states and events from a
+  JSON tree or something similar.
 
 
  Bugs

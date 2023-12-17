@@ -1,4 +1,4 @@
-from stama import Event, State, StateMachine, SuperState
+from stama import Event, State, StateMachine, SuperState, STARTING_STATE, DEEP_HISTORY, SHALLOW_HISTORY
 import unittest
 import logging
 
@@ -195,7 +195,33 @@ class TestHierarchicalStateMachine(unittest.TestCase):
         hsm.process_event(ev)
         self.assertEqual(hsm.current_state, aaa)
 
+    def test_goes_to_deep_history(self):
+        a, b, aa, ab, aaa, aab, aba, abb, ev, hsm = create_hierarchical_machine()
+
+        a._preferred_entry = DEEP_HISTORY
+
+        self.assertEqual(hsm.current_state, abb)
+
+        hsm.process_event(ev)
+        self.assertEqual(hsm.current_state, b)
+
+        hsm.process_event(ev)
+        self.assertEqual(hsm.current_state, abb)
+
+    def test_goes_to_shallow_history(self):
+        a, b, aa, ab, aaa, aab, aba, abb, ev, hsm = create_hierarchical_machine()
+
+        a._preferred_entry = SHALLOW_HISTORY
+
+        self.assertEqual(hsm.current_state, abb)
+
+        hsm.process_event(ev)
+        self.assertEqual(hsm.current_state, b)
+
+        hsm.process_event(ev)
+        self.assertEqual(hsm.current_state, aba)
+
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    # logging.basicConfig(level=logging.DEBUG)
     unittest.main()

@@ -205,7 +205,7 @@ class StateMachine:
             # TODO I think this would work better refactored into a function.
             true_destination = proxy_destination
             while isinstance(true_destination, SuperState):
-                logger.warning(
+                logger.info(
                     "%s is a SuperState, redirecting to the proper sub-state",
                     true_destination,
                 )
@@ -218,7 +218,7 @@ class StateMachine:
                     true_destination._preferred_entry == SHALLOW_HISTORY
                 ):
                     true_destination = true_destination._shallow_history
-                logger.warning(
+                logger.info(
                     "%s is the new true_destination", true_destination
                 )
 
