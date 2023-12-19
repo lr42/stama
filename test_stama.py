@@ -12,7 +12,6 @@ from stama import (
 
 
 # TODO Enforce actions
-# TODO Ensure all exit and entry actions are done on a HSM
 
 # TODO Guards
 
@@ -182,6 +181,29 @@ class TestHierarchicalStateMachine(unittest.TestCase):
 
         self.hsm.process_event(self.ev)
         self.assertEqual(self.hsm.current_state, self.aba)
+
+    def test_runs_all_entry_actions(self):
+        self.tmp = []
+
+        self.a.on_exit = lambda: self.tmp.append("a")
+        self.ab.on_exit = lambda: self.tmp.append("ab")
+        self.abb.on_exit = lambda: self.tmp.append("abb")
+
+        self.hsm.process_event(self.ev)
+
+        self.assertEqual(self.tmp, ["abb", "ab", "a"])
+
+    def test_runs_all_exit_actions(self):
+        self.tmp = []
+
+        self.a.on_entry = lambda: self.tmp.append("a")
+        self.aa.on_entry = lambda: self.tmp.append("aa")
+        self.aaa.on_entry = lambda: self.tmp.append("aaa")
+
+        self.hsm.process_event(self.ev)
+        self.hsm.process_event(self.ev)
+
+        self.assertEqual(self.tmp, ["a", "aa", "aaa"])
 
 
 if __name__ == "__main__":
