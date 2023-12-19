@@ -11,8 +11,6 @@ from stama import (
 )
 
 
-# TODO Enforce actions
-
 # TODO Guards
 
 
@@ -125,7 +123,7 @@ class TestStama(unittest.TestCase):
         self.assertEqual(self.tmp, "Something")
 
 
-class TestHierarchicalStateMachine(unittest.TestCase):
+class TestHSM(unittest.TestCase):
     def setUp(self):
         self.a = SuperState("a")
         self.b = State("b")
@@ -182,28 +180,44 @@ class TestHierarchicalStateMachine(unittest.TestCase):
         self.hsm.process_event(self.ev)
         self.assertEqual(self.hsm.current_state, self.aba)
 
+    # TODO Test within the same branch
     def test_runs_all_entry_actions(self):
-        self.tmp = []
-
         self.a.on_exit = lambda: self.tmp.append("a")
         self.ab.on_exit = lambda: self.tmp.append("ab")
         self.abb.on_exit = lambda: self.tmp.append("abb")
 
+        self.tmp = []
         self.hsm.process_event(self.ev)
-
         self.assertEqual(self.tmp, ["abb", "ab", "a"])
 
     def test_runs_all_exit_actions(self):
-        self.tmp = []
-
         self.a.on_entry = lambda: self.tmp.append("a")
         self.aa.on_entry = lambda: self.tmp.append("aa")
         self.aaa.on_entry = lambda: self.tmp.append("aaa")
+        self.b.on_entry = lambda: self.tmp.append("b")
 
+        self.tmp = []
         self.hsm.process_event(self.ev)
-        self.hsm.process_event(self.ev)
+        self.assertEqual(self.tmp, ["b"])
 
+        self.tmp = []
+        self.hsm.process_event(self.ev)
         self.assertEqual(self.tmp, ["a", "aa", "aaa"])
+
+    def test_runs_enforce_actions(self):
+        self.a.enforce = lambda: self.tmp.append("a")
+        self.aa.enforce = lambda: self.tmp.append("aa")
+        self.aaa.enforce = lambda: self.tmp.append("aaa")
+        self.b.enforce = lambda: self.tmp.append("b")
+        self.hsm.enforce = lambda: self.tmp.append("hsm")
+
+        self.tmp = []
+        self.hsm.process_event(self.ev)
+        self.assertEqual(self.tmp, ["b", "hsm"])
+
+        self.tmp = []
+        self.hsm.process_event(self.ev)
+        self.assertEqual(self.tmp, ["aaa", "aa", "a", "hsm"])
 
 
 if __name__ == "__main__":

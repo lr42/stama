@@ -286,6 +286,7 @@ class StateMachine:
 
             event.on_after_transition()
 
+            self._current_state.enforce()
             for state in destination_ancestry:
                 state.enforce()
             self.enforce()
