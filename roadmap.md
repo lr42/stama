@@ -43,16 +43,11 @@
  Maintenance
 ------------------------------------------------------------------------
 
-- [ ] {IN PROGRESS} Do unit testing.
-- [ ] {IN PROGRESS} Do unit testing for hierarchical state machines.
 - [ ] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
 - [ ] Refactor big ole' functions and methods into smaller
   ones.  (Especially `process_event()`.)
-- [ ] Use an enum for substate selection?
-- [ ] Use `setup` and `teardown` functions inside of unit tests.
-	- If possible, it'd be nice to remove the need for a global variable
-	  as well.
+- [ ] Use an enum for preferred substate selection?
 
 
  Done
@@ -72,3 +67,8 @@
   for super states.
 - [x] Handle 'internal' transitions, where the transition is set to
   `None`.
+- [x] Use `setup` and `teardown` functions inside of unit tests.
+	- If possible, it'd be nice to remove the need for a global variable
+	  as well.
+- [x] Do unit testing.
+- [x] Do unit testing for hierarchical state machines.

@@ -180,17 +180,33 @@ class TestHSM(unittest.TestCase):
         self.hsm.process_event(self.ev)
         self.assertEqual(self.hsm.current_state, self.aba)
 
-    # TODO Test within the same branch
-    def test_runs_all_entry_actions(self):
+    def test_runs_all_exit_actions(self):
         self.a.on_exit = lambda: self.tmp.append("a")
         self.ab.on_exit = lambda: self.tmp.append("ab")
         self.abb.on_exit = lambda: self.tmp.append("abb")
+        self.b.on_exit = lambda: self.tmp.append("b")
 
         self.tmp = []
         self.hsm.process_event(self.ev)
         self.assertEqual(self.tmp, ["abb", "ab", "a"])
 
-    def test_runs_all_exit_actions(self):
+        self.tmp = []
+        self.hsm.process_event(self.ev)
+        self.assertEqual(self.tmp, ["b"])
+
+        # Test transitions within the same branch
+
+        self.assertEqual(self.hsm.current_state, self.aaa)
+        ev2 = Event()
+        self.aaa.transitions[ev2] = self.aba
+        self.aa.on_exit = lambda: self.tmp.append("aa")
+        self.aaa.on_exit = lambda: self.tmp.append("aaa")
+
+        self.tmp = []
+        self.hsm.process_event(ev2)
+        self.assertEqual(self.tmp, ["aaa", "aa"])
+
+    def test_runs_all_entry_actions(self):
         self.a.on_entry = lambda: self.tmp.append("a")
         self.aa.on_entry = lambda: self.tmp.append("aa")
         self.aaa.on_entry = lambda: self.tmp.append("aaa")
@@ -203,6 +219,18 @@ class TestHSM(unittest.TestCase):
         self.tmp = []
         self.hsm.process_event(self.ev)
         self.assertEqual(self.tmp, ["a", "aa", "aaa"])
+
+        # Test transitions within the same branch
+
+        self.assertEqual(self.hsm.current_state, self.aaa)
+        ev2 = Event()
+        self.aaa.transitions[ev2] = self.aba
+        self.ab.on_entry = lambda: self.tmp.append("ab")
+        self.aba.on_entry = lambda: self.tmp.append("aba")
+
+        self.tmp = []
+        self.hsm.process_event(ev2)
+        self.assertEqual(self.tmp, ["ab", "aba"])
 
     def test_runs_enforce_actions(self):
         self.a.enforce = lambda: self.tmp.append("a")
@@ -218,6 +246,16 @@ class TestHSM(unittest.TestCase):
         self.tmp = []
         self.hsm.process_event(self.ev)
         self.assertEqual(self.tmp, ["aaa", "aa", "a", "hsm"])
+
+        self.assertEqual(self.hsm.current_state, self.aaa)
+        ev2 = Event()
+        self.aaa.transitions[ev2] = self.aba
+        self.ab.enforce = lambda: self.tmp.append("ab")
+        self.aba.enforce = lambda: self.tmp.append("aba")
+
+        self.tmp = []
+        self.hsm.process_event(ev2)
+        self.assertEqual(self.tmp, ["aba", "ab", "a", "hsm"])
 
 
 if __name__ == "__main__":
