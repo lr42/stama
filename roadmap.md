@@ -44,7 +44,7 @@
 ------------------------------------------------------------------------
 
 - [ ] {IN PROGRESS} Do unit testing.
-- [ ] Do unit testing for hierarchical state machines.
+- [ ] {IN PROGRESS} Do unit testing for hierarchical state machines.
 - [ ] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
 - [ ] Refactor big ole' functions and methods into smaller
