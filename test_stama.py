@@ -12,6 +12,7 @@ from stama import (
 
 
 # TODO Guards
+# TODO Test for thread safety
 
 
 class TestStama(unittest.TestCase):

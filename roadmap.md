@@ -4,12 +4,10 @@
  Features
 ------------------------------------------------------------------------
 
+- [ ] Add conditional junctions.
+- [ ] Add concurrent states.
+- [ ] Add forks and unions.
 - [ ] Add functions to set different actions on States.
-- [ ] Add functions to add States to StateMachines.
-- [ ] Add a way to make Events specific to a StateMachine?
-- [ ] Add transitions as something that can be set with the Constructor.
-	- How valuable would this be?  We need a set of States before we can
-	  create transitions to them.
 - [ ] Add an analysis method to StateMachine that will test for things
   like:
 	- Unused states
@@ -17,6 +15,9 @@
 	- Super states with only one sub state
 	- Many states that have similar transitions, that could instead all
 	  be part of a super state
+	- StateMachines that fully overlap
+	- StateMachines that partially overlap!
+		- Something pretty crazy must be going on for this to happen.
 - [ ] Add the ability to output a representation of a StateMachine as a
   mermaid diagram.
 - [ ] Add the ability to output a representation of a StateMachine as a
@@ -32,6 +33,7 @@
 	  new SuperState back, and then assign that as a new parent?
 - [ ] Allow creating a state machine and all states and events from a
   JSON tree or something similar.
+- [ ] Allow outputting a StateMachine as JSON/XML/or something else.
 
 
  Bugs
@@ -45,9 +47,21 @@
 
 - [ ] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
-- [ ] Refactor big ole' functions and methods into smaller
-  ones.  (Especially `process_event()`.)
 - [ ] Use an enum for preferred substate selection?
+
+
+ Up next
+========================================================================
+
+ Features
+------------------------------------------------------------------------
+
+- [ ] Add guard conditions.
+
+
+ Maintenance
+------------------------------------------------------------------------
+
 
 
  Done
@@ -72,3 +86,16 @@
 	  as well.
 - [x] Do unit testing.
 - [x] Do unit testing for hierarchical state machines.
+- [x] Refactor big ole' functions and methods into smaller
+  ones (especially `process_event()`).
+- [x] {DELETED} Add transitions as something that can be set with the
+  Constructor.
+	- How valuable would this be?  We need a set of States before we can
+	  create transitions to them.
+- [x] {DELETED} Add functions to add States to StateMachines.
+	- I'd rather analyze States to see if they belong to a
+	  StateMachine.  I cna use the whole list of StateMachines to test
+	  all StateMachines and see if there are States that are orphaned or
+	  that belong to more than one StateMachine.
+- [x] {DELETED} Add a way to make Events specific to a StateMachine?
+	- See above.

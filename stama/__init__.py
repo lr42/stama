@@ -179,118 +179,144 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
+    def _get_proxy_destination(self, event, handling_state):
+        while event not in handling_state.transitions:
+            if handling_state.parent is not None:
+                handling_state = handling_state.parent  # type: ignore
+            else:
+                raise SMEventNotHandledException(
+                    "No transition defined for "
+                    + str(event)
+                    + " in "
+                    + str(self._current_state)
+                )
+        return handling_state.transitions[event]
+
+    def _is_internal_transition(self, proxy_destination, event):
+        if proxy_destination is None:
+            logger.debug(
+                "%s handles %s internally, so no transition is done, and no actions are run.",
+                self.current_state,
+                event,
+            )
+            return True
+        return False
+
+    def _get_final_destination(self, proxy_destination):
+        final_destination = proxy_destination
+        while isinstance(final_destination, SuperState):
+            logger.info(
+                "%s is a SuperState, redirecting to the proper sub-state",
+                final_destination,
+            )
+            if final_destination._preferred_entry == STARTING_STATE:
+                final_destination = final_destination.starting_state
+            elif final_destination._preferred_entry == DEEP_HISTORY:
+                final_destination = final_destination._deep_history
+            elif final_destination._preferred_entry == SHALLOW_HISTORY:
+                final_destination = final_destination._shallow_history
+            logger.info(
+                "%s is the new final_destination", final_destination
+            )
+        return final_destination
+
+    def _figure_out_ancestry(self, origin_state, final_destination):
+        origin_ancestry = _get_ancestors(origin_state)
+        logger.debug("origin_ancestry: %s", origin_ancestry)
+
+        destination_ancestry = _get_ancestors(final_destination)
+        logger.debug("destination_ancestry: %s", destination_ancestry)
+
+        common_ancestor = _get_common_ancestor(
+            origin_ancestry, destination_ancestry
+        )
+        logger.debug("common_ancestor: %s", common_ancestor)
+
+        return common_ancestor
+
+    def _proceess_uncommon_origin_ancestors(
+        self, uncommon_origin_ancestors, origin_state
+    ):
+        child_state = origin_state
+        for state in uncommon_origin_ancestors:
+            state.on_exit()
+            # pylint: disable=protected-access
+            state._deep_history = origin_state
+            state._shallow_history = child_state
+            child_state = state
+
+    def _exit_current_state(self, origin_state, common_ancestor):
+        origin_ancestry = _get_ancestors(origin_state)
+        if common_ancestor is None:
+            uncommon_origin_ancestors = origin_ancestry[:]
+        else:
+            uncommon_origin_ancestors = origin_ancestry[
+                : origin_ancestry.index(common_ancestor)
+            ]
+
+        origin_state.on_exit()
+
+        self._proceess_uncommon_origin_ancestors(
+            uncommon_origin_ancestors, origin_state
+        )
+
+    def _enter_destination_state(
+        self, final_destination, common_ancestor
+    ):
+        destination_ancestry = _get_ancestors(final_destination)
+        if common_ancestor is None:
+            uncommon_destination_ancestors = destination_ancestry[:]
+        else:
+            uncommon_destination_ancestors = destination_ancestry[
+                : destination_ancestry.index(common_ancestor)
+            ]
+        uncommon_destination_ancestors.reverse()
+
+        for state in uncommon_destination_ancestors:
+            state.on_entry()
+        final_destination.on_entry()
+
+    def _enforce_all_relevant_states(self, final_destination):
+        self._current_state.enforce()
+        destination_ancestry = _get_ancestors(final_destination)
+        for state in destination_ancestry:
+            state.enforce()
+        self.enforce()
+
     def process_event(self, event: Event) -> None:
         """Change to the next state, based on the event passed"""
         with self._lock:
-            handling_state = self._current_state
-            while event not in handling_state.transitions:
-                if handling_state.parent is not None:
-                    handling_state = handling_state.parent  # type: ignore
-                else:
-                    raise SMEventNotHandledException(
-                        "No transition defined for "
-                        + str(event)
-                        + " in "
-                        + str(self._current_state)
-                    )
-            proxy_destination = handling_state.transitions[event]
-
-            if proxy_destination is None:
-                logger.debug(
-                    "%s handles %s internally, so no transition is done, and no actions are run.",
-                    self.current_state,
-                    event,
-                )
+            proxy_destination = self._get_proxy_destination(
+                event, self.current_state
+            )
+            # If this is an internal transition, we don't need to do
+            #  any transition at all.
+            if self._is_internal_transition(proxy_destination, event):
                 return
-
-            # TODO I think this would work better refactored into a function.
-            true_destination = proxy_destination
-            while isinstance(true_destination, SuperState):
-                logger.info(
-                    "%s is a SuperState, redirecting to the proper sub-state",
-                    true_destination,
-                )
-                # pylint: disable=protected-access
-                if true_destination._preferred_entry == STARTING_STATE:
-                    true_destination = true_destination.starting_state
-                elif true_destination._preferred_entry == DEEP_HISTORY:
-                    true_destination = true_destination._deep_history
-                elif (
-                    true_destination._preferred_entry == SHALLOW_HISTORY
-                ):
-                    true_destination = true_destination._shallow_history
-                logger.info(
-                    "%s is the new true_destination", true_destination
-                )
-
+            final_destination = self._get_final_destination(
+                proxy_destination
+            )
             logger.debug(
                 "%s: Transition start: %s --> %s --> %s",
                 self,
                 self._current_state,
                 event,
-                true_destination,
+                final_destination,
             )
-
-            origin_ancestry = _get_ancestors(self._current_state)
-            logger.debug("origin_ancestry: %s", origin_ancestry)
-
-            destination_ancestry = _get_ancestors(true_destination)
-            logger.debug(
-                "destination_ancestry: %s", destination_ancestry
-            )
-
-            common_ancestor = _get_common_ancestor(
-                origin_ancestry, destination_ancestry
-            )
-            logger.debug("common_ancestor: %s", common_ancestor)
-
-            # TODO Check guard.
-
-            event.on_before_transition()
-
-            if common_ancestor is None:
-                uncommon_origin_ancestors = origin_ancestry[:]
-            else:
-                uncommon_origin_ancestors = origin_ancestry[
-                    : origin_ancestry.index(common_ancestor)
-                ]
-
             origin_state = self._current_state
-
-            self._current_state.on_exit()
-
-            # Process uncommon ancestors
-            child_state = self._current_state
-            for state in uncommon_origin_ancestors:
-                state.on_exit()
-                # pylint: disable=protected-access
-                state._deep_history = origin_state
-                state._shallow_history = child_state
-                child_state = state
-
+            common_ancestor = self._figure_out_ancestry(
+                origin_state, final_destination
+            )
+            # TODO Check guard.
+            event.on_before_transition()
+            self._exit_current_state(origin_state, common_ancestor)
             event.on_during_transition()
-
-            self._current_state = true_destination
-
-            if common_ancestor is None:
-                uncommon_destination_ancestors = destination_ancestry[:]
-            else:
-                uncommon_destination_ancestors = destination_ancestry[
-                    : destination_ancestry.index(common_ancestor)
-                ]
-            uncommon_destination_ancestors.reverse()
-
-            for state in uncommon_destination_ancestors:
-                state.on_entry()
-            self._current_state.on_entry()
-
+            self._enter_destination_state(
+                final_destination, common_ancestor
+            )
+            self._current_state = final_destination
             event.on_after_transition()
-
-            self._current_state.enforce()
-            for state in destination_ancestry:
-                state.enforce()
-            self.enforce()
-
+            self._enforce_all_relevant_states(final_destination)
             logger.info(
                 "%s: Transition done: %s --> %s --> %s",
                 self,
