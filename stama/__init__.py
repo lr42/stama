@@ -56,6 +56,22 @@ class Event:  # pylint: disable=too-few-public-methods
         return "<Event: " + self.name + ">"
 
 
+class Guard:
+    """A conditional guard, which can be set as a States transition"""
+
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, condition: Callable[[], bool], state: "State"):
+        self.condition = condition
+        self.state = state
+
+    def evaluate(self):
+        """Returns the default state if the condition function evaluates to True"""
+        if self.condition():
+            return self.state
+        return None
+
+
 class State:
     """One of the many states that a state machine can be in"""
 
@@ -79,7 +95,7 @@ class State:
             self.add_to_super_state(parent)
         self._parent = parent
 
-        self.transitions: dict[Event, "State"] = {}
+        self.transitions: dict[Event, "State" | Guard] = {}
 
         self.on_entry: Callable[[], None] = lambda: logger.debug(
             "No action set for entering %s.", self
@@ -185,7 +201,8 @@ class StateMachine:
         """The current state the state machine is in"""
         return self._current_state
 
-    def _get_proxy_destination(self, event, handling_state):
+    def _get_handling_state(self, event, origin_state):
+        handling_state = origin_state
         while event not in handling_state.transitions:
             if handling_state.parent is not None:
                 handling_state = handling_state.parent  # type: ignore
@@ -196,7 +213,7 @@ class StateMachine:
                     + " in "
                     + str(self._current_state)
                 )
-        return handling_state.transitions[event]
+        return handling_state
 
     def _is_internal_transition(self, proxy_destination, event):
         if proxy_destination is None:
@@ -292,9 +309,15 @@ class StateMachine:
     def process_event(self, event: Event) -> None:
         """Change to the next state, based on the event passed"""
         with self._lock:
-            proxy_destination = self._get_proxy_destination(
-                event, self.current_state
+            origin_state = self._current_state
+            handling_state = self._get_handling_state(
+                event, origin_state
             )
+            if isinstance(handling_state.transitions[event], Guard):
+                guard_condition = handling_state.transitions[event]
+                proxy_destination = guard_condition.evaluate()
+            else:
+                proxy_destination = handling_state.transitions[event]
             # If this is an internal transition, we don't need to do
             #  any transition at all.
             if self._is_internal_transition(proxy_destination, event):
@@ -309,11 +332,9 @@ class StateMachine:
                 event,
                 final_destination,
             )
-            origin_state = self._current_state
             common_ancestor = self._figure_out_ancestry(
                 origin_state, final_destination
             )
-            # TODO Check guard.
             event.on_before_transition()
             self._exit_current_state(origin_state, common_ancestor)
             event.on_during_transition()

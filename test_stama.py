@@ -2,6 +2,7 @@ import unittest
 import logging
 from stama import (
     Event,
+    Guard,
     State,
     StateMachine,
     SuperState,
@@ -122,6 +123,26 @@ class TestStama(unittest.TestCase):
         self.assertEqual(self.tmp, "Nothing")
         self.light.process_event(self.cycle)
         self.assertEqual(self.tmp, "Something")
+
+    def test_handles_true_guard_conditions(self):
+        self.tmp = 101
+
+        self.go.transitions[self.cycle] = Guard(
+            lambda: self.tmp > 100, self.stop
+        )
+
+        self.light.process_event(self.cycle)
+        self.assertEqual(self.light.current_state, self.stop)
+
+    def test_handles_false_guard_conditions(self):
+        self.tmp = 99
+
+        self.go.transitions[self.cycle] = Guard(
+            lambda: self.tmp > 100, self.stop
+        )
+
+        self.light.process_event(self.cycle)
+        self.assertEqual(self.light.current_state, self.go)
 
 
 class TestHSM(unittest.TestCase):
