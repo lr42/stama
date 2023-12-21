@@ -34,13 +34,19 @@ class Event:  # pylint: disable=too-few-public-methods
 
         self._description = description
 
-        self.on_before_transition: Callable = lambda: logger.debug(
+        self.on_before_transition: Callable[
+            [], None
+        ] = lambda: logger.debug(
             "No action set for before %s transition.", self
         )
-        self.on_during_transition: Callable = lambda: logger.debug(
+        self.on_during_transition: Callable[
+            [], None
+        ] = lambda: logger.debug(
             "No action set for during %s transition.", self
         )
-        self.on_after_transition: Callable = lambda: logger.debug(
+        self.on_after_transition: Callable[
+            [], None
+        ] = lambda: logger.debug(
             "No action set for after %s transition.", self
         )
 
@@ -75,13 +81,13 @@ class State:
 
         self.transitions: dict[Event, "State"] = {}
 
-        self.on_entry: Callable = lambda: logger.debug(
+        self.on_entry: Callable[[], None] = lambda: logger.debug(
             "No action set for entering %s.", self
         )
-        self.on_exit: Callable = lambda: logger.debug(
+        self.on_exit: Callable[[], None] = lambda: logger.debug(
             "No action set for exiting %s.", self
         )
-        self.enforce: Callable = lambda: logger.debug(
+        self.enforce: Callable[[], None] = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
@@ -165,7 +171,7 @@ class StateMachine:
         self._starting_state = starting_state
         self._current_state = self._starting_state
 
-        self.enforce: Callable = lambda: logger.debug(
+        self.enforce: Callable[[], None] = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
