@@ -279,6 +279,19 @@ class TestHSM(unittest.TestCase):
         self.hsm.process_event(ev2)
         self.assertEqual(self.tmp, ["aba", "ab", "a", "hsm"])
 
+    def test_can_upgrade_state_to_superstate(self):
+        with self.assertLogs(level=logging.WARNING):
+            self.b.make_super_state()
+
+        self.assertIsInstance(self.b, SuperState)
+
+    def test_auto_upgrades_state_to_superstate(self):
+        ba = State("ba")
+        with self.assertLogs(level=logging.WARNING):
+            ba.add_to_super_state(self.b)
+
+        self.assertIsInstance(self.b, SuperState)
+
 
 if __name__ == "__main__":
     # logging.basicConfig(level=logging.DEBUG)

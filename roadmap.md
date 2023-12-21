@@ -56,7 +56,6 @@
  Features
 ------------------------------------------------------------------------
 
-- [ ] Add guard conditions.
 
 
  Maintenance
@@ -99,3 +98,4 @@
 	  that belong to more than one StateMachine.
 - [x] {DELETED} Add a way to make Events specific to a StateMachine?
 	- See above.
+- [x] Add guard conditions.

@@ -119,8 +119,16 @@ class State:
 
     # Don't add type hints to this function.  The `__class__`
     #  reassignment makes type checking not work very well here.
-    def make_super_state(self, starting_state: "State") -> None:
+    def make_super_state(
+        self, starting_state: Optional["State"] = None
+    ) -> None:
         """Make this state into a SuperState"""
+        logger.warning(
+            """Converting %s to a SuperState.  This is mostly for
+ playing around and you shouldn't use it in production code.  (Create
+ a SuperState object directly instead.)""",
+            self,
+        )
         self.__class__ = SuperState
         # pylint: disable=no-member
         self._init_super_state(starting_state)  # type: ignore
@@ -128,10 +136,7 @@ class State:
     def add_to_super_state(self, parent: "SuperState") -> None:
         """Add this state as a sub-state to a super-state"""
         if not isinstance(parent, SuperState):
-            logger.warning(
-                "Automatically converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code."
-            )
-            parent.make_super_state()
+            parent.make_super_state(self)
         if parent.starting_state is None:
             parent.starting_state = self
         self._parent = parent
@@ -218,7 +223,7 @@ class StateMachine:
     def _is_internal_transition(self, proxy_destination, event):
         if proxy_destination is None:
             logger.debug(
-                "%s handles %s internally, so no transition is done, and no actions are run.",
+                "%s handles %s internally.  No transition done.  No actions run.",
                 self.current_state,
                 event,
             )
@@ -232,6 +237,7 @@ class StateMachine:
                 "%s is a SuperState, redirecting to the proper sub-state",
                 final_destination,
             )
+            # pylint: disable=protected-access
             if final_destination._preferred_entry == STARTING_STATE:
                 final_destination = final_destination.starting_state
             elif final_destination._preferred_entry == DEEP_HISTORY:
