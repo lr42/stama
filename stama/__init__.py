@@ -5,6 +5,8 @@ from typing import (
     List,
     Optional,
     Callable,
+    Dict,
+    Union,
 )
 from threading import RLock
 
@@ -95,7 +97,7 @@ class State:
             self.add_to_super_state(parent)
         self._parent = parent
 
-        self.transitions: dict[Event, "State" | Guard] = {}
+        self.transitions: Dict[Event, Union["State", Guard]] = {}
 
         self.on_entry: Callable[[], None] = lambda: logger.debug(
             "No action set for entering %s.", self
