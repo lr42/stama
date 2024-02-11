@@ -13,7 +13,6 @@ from stama import (
 )
 
 
-# TODO Guards
 # TODO Test for thread safety
 
 
@@ -146,7 +145,7 @@ class TestStama(unittest.TestCase):
         self.assertEqual(self.light.current_state, self.go)
 
 
-class TestHSM(unittest.TestCase):
+class TestHierarchicalSM(unittest.TestCase):
     def setUp(self):
         self.a = SuperState("a")
         self.b = State("b")

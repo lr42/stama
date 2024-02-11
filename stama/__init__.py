@@ -133,9 +133,7 @@ class State(Node):
     ) -> None:
         """Make this state into a SuperState"""
         logger.warning(
-            """Converting %s to a SuperState.  This is mostly for
- playing around and you shouldn't use it in production code.  (Create
- a SuperState object directly instead.)""",
+            "Converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code.  (Create a SuperState object directly instead.)",
             self,
         )
         self.__class__ = SuperState
@@ -486,24 +484,3 @@ def _get_common_ancestor(x, y):
             return i
     return None
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    cycle = Event()
-    print(cycle)
-    my_state = State()
-    print(my_state.name)
-    print(State.all_states_globally)
-    print(my_state.all_states_globally)
-
-    my_state.on_entry()
-    my_state.on_entry = lambda: print("cowabunga")
-    my_state.on_entry()
-
-    def my_new_on_entry():
-        """Nonya biznis"""
-        print("cows")
-        print("pigs")
-
-    my_state.on_entry = my_new_on_entry
-    my_state.on_entry()
