@@ -6,6 +6,7 @@ from stama import (
     State,
     StateMachine,
     SuperState,
+    ConditionalJunction,
     STARTING_STATE,
     DEEP_HISTORY,
     SHALLOW_HISTORY,
@@ -291,6 +292,45 @@ class TestHSM(unittest.TestCase):
             ba.add_to_super_state(self.b)
 
         self.assertIsInstance(self.b, SuperState)
+
+
+class TestConditionalJunctions(unittest.TestCase):
+    def setUp(self):
+        self.cooking = State("cooking")
+        self.rare = State("rare")
+        self.medium = State("medium")
+        self.well_done = State("well done")
+        self.temperature_check = ConditionalJunction(self.cooking)
+        self.temperature_check.add_condition(
+            lambda: self.temperature > 160, self.well_done
+        )
+        self.temperature_check.add_condition(
+            lambda: self.temperature > 140, self.medium
+        )
+        self.temperature_check.add_condition(
+            lambda: self.temperature > 120, self.rare
+        )
+        self.timer = Event("timer")
+        self.cooking.transitions[self.timer] = self.temperature_check
+        self.kitchen = StateMachine(self.cooking)
+
+    def test_checks_conditions(self):
+        # TODO Do this for everything:
+        logging.debug("******************** Conditional Junction: Does it check conditions?")
+
+        self.temperature = 100
+        logging.debug("temperature: %s", self.temperature)
+        self.kitchen.process_event(self.timer)
+
+        self.assertEqual(self.kitchen.current_state, self.cooking)
+
+        self.temperature = 150
+        logging.debug("temperature: %s", self.temperature)
+        self.kitchen.process_event(self.timer)
+
+        self.assertEqual(self.kitchen.current_state, self.medium)
+
+        logging.info("Done: Conditional Junction: Does it check conditions?")
 
 
 if __name__ == "__main__":

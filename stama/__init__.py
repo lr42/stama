@@ -7,6 +7,8 @@ from typing import (
     Callable,
     Dict,
     Union,
+    Tuple,
+    Any,
 )
 from threading import RLock
 
@@ -74,7 +76,12 @@ class Guard:
         return None
 
 
-class State:
+class Node:
+# TODO Should this contain super state info?
+    pass
+
+
+class State(Node):
     """One of the many states that a state machine can be in"""
 
     # pylint: disable=too-many-instance-attributes
@@ -170,6 +177,92 @@ class SuperState(State):
         self._child_states = []
         if starting_state is not None:
             self._child_states.append(starting_state)
+
+
+class ConditionalJunction(Node):
+    """One of the many states that a state machine can be in"""
+
+    all_conditional_junctions_globally: List["ConditionalJunction"] = []
+
+    def __init__(
+        self,
+        default_state: Node,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        parent: Optional["SuperState"] = None,
+    ):
+        # TODO A lot of this is copied directly from State.  I need to figure out where these overlap and create a shared base class that both of them use, that contains their common methods.
+        self.name = name
+        if self.name is None:
+            self.name = "CJ" + str(len(ConditionalJunction.all_conditional_junctions_globally))  ## Change
+
+        self.description = description
+
+        if parent is not None:
+            self.add_to_super_state(parent)
+        self._parent = parent
+
+        self.default_state = default_state
+        self.condition_list: List[Tuple[Callable[[], bool], Node]] = []
+
+        ## self.transitions: Dict[Event, Union["State", Guard]] = {}
+
+        self.on_entry: Callable[[], None] = lambda: logger.debug(
+            "No action set for entering %s.", self
+        )
+        self.on_exit: Callable[[], None] = lambda: logger.debug(
+            "No action set for exiting %s.", self
+        )
+        self.enforce: Callable[[], None] = lambda: logger.debug(
+            "Nothing to enforce on %s.", self
+        )
+
+        ConditionalJunction.all_conditional_junctions_globally.append(self)  ## Change
+
+    def __repr__(self):
+        return "<ConditionalJunction: " + self.name + ">"
+
+    @property
+    def parent(self):
+        """The super-state that this state belongs to"""
+        return self._parent
+
+    ## # Don't add type hints to this function.  The `__class__`
+    ## #  reassignment makes type checking not work very well here.
+    ## def make_super_state(
+    ##     self, starting_state: Optional["State"] = None
+    ## ) -> None:
+    ##     """Make this state into a SuperState"""
+    ##     logger.warning(
+    ##         "Converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code.  (Create a SuperState object directly instead.)",
+    ##         self,
+    ##     )
+    ##     self.__class__ = SuperState
+    ##     # pylint: disable=no-member
+    ##     self._init_super_state(starting_state)  # type: ignore
+
+    def add_to_super_state(self, parent: "SuperState") -> None:
+        """Add this state as a sub-state to a super-state"""
+        if not isinstance(parent, SuperState):
+            parent.make_super_state(self)
+        if parent.starting_state is None:
+            parent.starting_state = self
+        self._parent = parent
+        ##############################################################
+
+    def add_condition(self, condition, State):
+        self.condition_list.append((condition, State))
+
+    def evaluate(self):
+        for i in range(len(self.condition_list)):
+            if self.condition_list[i][0]():
+                logging.warning("%s: Condition #%s is true; transitioning to %s", self, i, self.condition_list[i][1])
+                return self.condition_list[i][1]
+        logging.warning("%s: No condition met; transitioning to default: %s", self, self.default_state)
+        return self.default_state
+
+    def on_entry(self):
+        print(self._evaluate())
 
 
 class StateMachine:
@@ -314,25 +407,10 @@ class StateMachine:
             state.enforce()
         self.enforce()
 
-    def process_event(self, event: Event) -> None:
-        """Change to the next state, based on the event passed"""
+    def transition_directly_to_state(self, final_destination, event = None) -> None:
         with self._lock:
             origin_state = self._current_state
-            handling_state = self._get_handling_state(
-                event, origin_state
-            )
-            if isinstance(handling_state.transitions[event], Guard):
-                guard_condition = handling_state.transitions[event]
-                proxy_destination = guard_condition.evaluate()
-            else:
-                proxy_destination = handling_state.transitions[event]
-            # If this is an internal transition, we don't need to do
-            #  any transition at all.
-            if self._is_internal_transition(proxy_destination, event):
-                return
-            final_destination = self._get_final_destination(
-                proxy_destination
-            )
+
             logger.debug(
                 "%s: Transition start: %s --> %s --> %s",
                 self,
@@ -340,18 +418,28 @@ class StateMachine:
                 event,
                 final_destination,
             )
+
             common_ancestor = self._figure_out_ancestry(
                 origin_state, final_destination
             )
-            event.on_before_transition()
+            if event != None:
+                event.on_before_transition()
             self._exit_current_state(origin_state, common_ancestor)
-            event.on_during_transition()
+
+            if event != None:
+                event.on_during_transition()
+
             self._enter_destination_state(
                 final_destination, common_ancestor
             )
             self._current_state = final_destination
-            event.on_after_transition()
+            if event != None:
+                event.on_after_transition()
             self._enforce_all_relevant_states(final_destination)
+
+            if isinstance(final_destination, ConditionalJunction):
+                self.transition_directly_to_state(final_destination.evaluate())
+
             logger.info(
                 "%s: Transition done: %s --> %s --> %s",
                 self,
@@ -359,6 +447,29 @@ class StateMachine:
                 event,
                 self._current_state,
             )
+
+    def process_event(self, event: Event) -> None:
+        """Change to the next state, based on the event passed"""
+        origin_state = self._current_state
+        handling_state = self._get_handling_state(
+            event, origin_state
+        )
+
+        if isinstance(handling_state.transitions[event], Guard):
+            guard_condition = handling_state.transitions[event]
+            proxy_destination = guard_condition.evaluate()
+        else:
+            proxy_destination = handling_state.transitions[event]
+
+        # If this is an internal transition, we don't need to do
+        #  any transition at all.
+        if self._is_internal_transition(proxy_destination, event):
+            return
+        final_destination = self._get_final_destination(
+            proxy_destination
+        )
+
+        self.transition_directly_to_state(final_destination, event)
 
 
 def _get_ancestors(state):
