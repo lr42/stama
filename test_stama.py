@@ -24,6 +24,7 @@ class TestStama(unittest.TestCase):
         self.go.transitions[self.cycle] = self.stop
         self.stop.transitions[self.cycle] = self.go
         self.light = StateMachine(self.go)
+        self.tmp = ""
 
     def test_processes_events(self):
         self.assertEqual(self.light.current_state, self.go)
@@ -171,6 +172,8 @@ class TestHierarchicalSM(unittest.TestCase):
 
         self.hsm = StateMachine(self.abb, "hsm")
 
+        self.tmp = []
+
     def test_goes_to_starting_state(self):
         self.assertEqual(self.hsm.current_state, self.abb)
 
@@ -300,6 +303,7 @@ class TestConditionalJunctions(unittest.TestCase):
         self.medium = State("medium")
         self.well_done = State("well done")
         self.temperature_check = ConditionalJunction(self.cooking)
+        self.temperature = None
         self.temperature_check.add_condition(
             lambda: self.temperature > 160, self.well_done
         )
@@ -315,7 +319,9 @@ class TestConditionalJunctions(unittest.TestCase):
 
     def test_checks_conditions(self):
         # TODO Do this for everything:
-        logging.debug("******************** Conditional Junction: Does it check conditions?")
+        logging.debug(
+            "******************** Conditional Junction: Does it check conditions?"
+        )
 
         self.temperature = 100
         logging.debug("temperature: %s", self.temperature)
@@ -329,7 +335,9 @@ class TestConditionalJunctions(unittest.TestCase):
 
         self.assertEqual(self.kitchen.current_state, self.medium)
 
-        logging.info("Done: Conditional Junction: Does it check conditions?")
+        logging.info(
+            "Done: Conditional Junction: Does it check conditions?"
+        )
 
 
 if __name__ == "__main__":
