@@ -63,7 +63,7 @@ class Event:  # pylint: disable=too-few-public-methods
 
 
 class Guard:
-    """A conditional guard, which can be set as a States transition"""
+    """A conditional guard, which can be set as a State's transition"""
 
     # pylint: disable=too-few-public-methods
 
@@ -265,14 +265,14 @@ class ConditionalJunction(Node):
         """Evaluate all the conditions in this ConditionalJunction and for the first condition that is True, return the State to transition to"""
         for i in range(len(self.condition_list)):
             if self.condition_list[i][0]():
-                logging.warning(
+                logging.debug(
                     "%s: Condition #%s is true; next state is %s",
                     self,
                     i,
                     self.condition_list[i][1],
                 )
                 return self.condition_list[i][1]
-        logging.warning(
+        logging.debug(
             "%s: No condition met; default state is: %s",
             self,
             self.default_state,
@@ -449,6 +449,7 @@ class StateMachine:
 
             if event is not None:
                 event.on_before_transition()
+
             self._exit_current_state(origin_state, common_ancestor)
 
             if event is not None:
@@ -458,8 +459,10 @@ class StateMachine:
                 final_destination, common_ancestor
             )
             self._current_state = final_destination
+
             if event is not None:
                 event.on_after_transition()
+
             self._enforce_all_relevant_states(final_destination)
 
             if isinstance(final_destination, ConditionalJunction):
