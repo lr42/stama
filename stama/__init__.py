@@ -480,24 +480,25 @@ class StateMachine:
 
     def process_event(self, event: Event) -> None:
         """Change to the next state, based on the event passed in"""
-        origin_state = self._current_state
-        handling_state = self._get_handling_state(event, origin_state)
+        with self._lock:
+            origin_state = self._current_state
+            handling_state = self._get_handling_state(event, origin_state)
 
-        if isinstance(handling_state.transitions[event], Guard):
-            guard_condition = handling_state.transitions[event]
-            proxy_destination = guard_condition.evaluate()
-        else:
-            proxy_destination = handling_state.transitions[event]
+            if isinstance(handling_state.transitions[event], Guard):
+                guard_condition = handling_state.transitions[event]
+                proxy_destination = guard_condition.evaluate()
+            else:
+                proxy_destination = handling_state.transitions[event]
 
-        # If this is an internal transition, we don't need to do
-        #  any transition at all.
-        if self._is_internal_transition(proxy_destination, event):
-            return
-        final_destination = self._get_final_destination(
-            proxy_destination
-        )
+            # If this is an internal transition, we don't need to do
+            #  any transition at all.
+            if self._is_internal_transition(proxy_destination, event):
+                return
+            final_destination = self._get_final_destination(
+                proxy_destination
+            )
 
-        self.transition_directly_to_state(final_destination, event)
+            self.transition_directly_to_state(final_destination, event)
 
 
 def _get_ancestors(state):
