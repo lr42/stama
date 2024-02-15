@@ -299,14 +299,15 @@ class StateMachine:
 
         self.description = description
 
-        self._starting_state = starting_state
-        self._current_state = self._starting_state
+        self._lock = RLock()
 
         self.enforce: Callable[[], None] = lambda: logger.debug(
             "Nothing to enforce on %s.", self
         )
 
-        self._lock = RLock()
+        self._starting_state = starting_state
+        self._current_state = None
+        self.transition_directly_to_state(starting_state)
 
     def __repr__(self):
         return "<SMachine: " + self.name + ">"
@@ -394,7 +395,8 @@ class StateMachine:
                 : origin_ancestry.index(common_ancestor)
             ]
 
-        origin_state.on_exit()
+        if origin_state is not None:
+            origin_state.on_exit()
 
         self._proceess_uncommon_origin_ancestors(
             uncommon_origin_ancestors, origin_state
@@ -497,9 +499,10 @@ class StateMachine:
 
 def _get_ancestors(state):
     ancestry_list = []
-    while state.parent is not None:
-        ancestry_list.append(state.parent)
-        state = state.parent  # type: ignore
+    if state is not None:
+        while state.parent is not None:
+            ancestry_list.append(state.parent)
+            state = state.parent  # type: ignore
     return ancestry_list
 
 
