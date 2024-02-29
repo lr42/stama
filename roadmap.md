@@ -4,7 +4,11 @@
  Features
 ------------------------------------------------------------------------
 
-- [ ] Add conditional junctions.
+- [x] Add conditional junctions.
+- [ ] Add pass-through junctions, that run their `on_entry` actions, but
+  then transition directly to the next state, running their `on_exit()`
+  methods on the way.  Basically a conditional junction, without any
+  conditions, only a default state to transitions to.
 - [ ] Add concurrent states.
 - [ ] Add forks and unions.
 - [ ] Add functions to set different actions on States.
@@ -26,28 +30,50 @@
   Graphviz (dot) file?
 - [ ] Add the ability to output a representation of a StateMachine as a
   state table.
-  	- As CSV?
+	- As CSV?
 	- A LaTex?
 - [ ] Add a 'lenient' flag that lets a user upgrade a state?
 	- Would it be better to just pass a State to a SuperState, to get a
 	  new SuperState back, and then assign that as a new parent?
-- [ ] Allow creating a state machine and all states and events from a
-  JSON tree or something similar.
+- [ ] Allow creating/importing a state machine and all states and events
+  from a JSON tree or something similar.
+	- Maybe a state table?
 - [ ] Allow outputting a StateMachine as JSON/XML/or something else.
+- [ ] Better documentation for class and method parameters.
 
 
  Bugs
 ------------------------------------------------------------------------
 
-- [ ] TK
+- [ ] Fix potential race conditions when modifiying states or events
+  when a state transition is happening, by adding locks in appropriate
+  places.  (See commit: `39bf3d94377b5e029e18bf8247b528c43fd32b75`.)
+- [ ] Currently the ConditionalJunction logs are wrong.  They don't show
+  where we are coming from.  The currently look like the following:
+
+	INFO:stama.stama:<SMachine: M0>: Transition done: <ConditionalJunction: CJ0> --> None --> <State: Waiting for a short break>
+
 
 
  Maintenance
 ------------------------------------------------------------------------
 
-- [ ] Since I need Union anyway, should I just use Union everywhere
+- [x] Since I need Union anyway, should I just use Union everywhere
   instead of `|`?
 - [ ] Use an enum for preferred substate selection?
+- [ ] Create a proper `Node` class, to reduce code reuse.  (This class
+  could be a better bass class for `State`, `ConditionalJunction`, and
+  possibly others.)
+- [ ] Set up git hooks to handle testing, linting, formatting, etc.
+- [ ] Change line widths to 79, to match PEP8.
+- [ ] Add docstrings to the unit tests?
+- [ ] Add a start() method to StateMachine, so we can delay initializing
+  it until we are ready for it.  (Perhaps we want to set up our starting
+  state after we create our StateMachine.)
+- [ ] Only show enforced actions if there are any enforced actions at
+  all.  I don't need to see which states don't have enforced actions if
+  none of them do.
+	- Are there any other places where this applies?
 
 
  Up next
