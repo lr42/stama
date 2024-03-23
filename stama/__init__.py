@@ -19,13 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 class SMEventNotHandledException(Exception):
-    """The current State does not have a transition defined for this Event
-    (nor do any of it's SuperStates)
+    """
+    The current State does not have a transition defined for this Event
+    (nor do any of it's SuperStates).
     """
 
 
 class Event:  # pylint: disable=too-few-public-methods
-    """An event which is passed to a state machine"""
+    """An event which is passed to a state machine."""
 
     all_events_globally: List["Event"] = []
 
@@ -63,7 +64,7 @@ class Event:  # pylint: disable=too-few-public-methods
 
 
 class Guard:
-    """A conditional guard, which can be set as a State's transition"""
+    """A conditional guard, which can be set as a State's transition."""
 
     # pylint: disable=too-few-public-methods
 
@@ -72,18 +73,18 @@ class Guard:
         self.state = state
 
     def evaluate(self):
-        """Returns the default state if the condition function evaluates to True"""
+        """Returns the default state if the condition function evaluates to True."""
         if self.condition():
             return self.state
         return None
 
 
 class Node:  # pylint: disable=too-few-public-methods
-    """The base class for states (and similar nodes) that can be tranistioned to"""
+    """The base class for states (and similar nodes) that can be tranistioned to."""
 
 
 class State(Node):
-    """One of the many states that a state machine can be in"""
+    """One of the many states that a state machine can be in."""
 
     # pylint: disable=too-many-instance-attributes
 
@@ -124,7 +125,7 @@ class State(Node):
 
     @property
     def parent(self):
-        """The super-state that this state belongs to"""
+        """The super-state that this state belongs to."""
         return self._parent
 
     # Don't add type hints to this function.  The `__class__`
@@ -132,7 +133,7 @@ class State(Node):
     def make_super_state(
         self, starting_state: Optional["State"] = None
     ) -> None:
-        """Make this state into a SuperState"""
+        """Make this state into a SuperState."""
         logger.warning(
             "Converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code.  (Create a SuperState object directly instead.)",
             self,
@@ -142,7 +143,7 @@ class State(Node):
         self._init_super_state(starting_state)  # type: ignore
 
     def add_to_super_state(self, parent: "SuperState") -> None:
-        """Add this state as a sub-state to a super-state"""
+        """Add this state as a sub-state to a super-state."""
         if not isinstance(parent, SuperState):
             parent.make_super_state(self)
         if parent.starting_state is None:
@@ -156,7 +157,7 @@ DEEP_HISTORY = "deep history"
 
 
 class SuperState(State):
-    """A state which can contain other states as sub-states"""
+    """A state which can contain other states as sub-states."""
 
     def __init__(
         self,
@@ -179,7 +180,7 @@ class SuperState(State):
 
 
 class ConditionalJunction(Node):
-    """One of the many states that a state machine can be in"""
+    """One of the many states that a state machine can be in."""
 
     # pylint: disable=too-many-instance-attributes
 
@@ -231,7 +232,7 @@ class ConditionalJunction(Node):
 
     @property
     def parent(self):
-        """The super-state that this state belongs to"""
+        """The super-state that this state belongs to."""
         return self._parent
 
     ## # Don't add type hints to this function.  The `__class__`
@@ -239,7 +240,7 @@ class ConditionalJunction(Node):
     ## def make_super_state(
     ##     self, starting_state: Optional["State"] = None
     ## ) -> None:
-    ##     """Make this state into a SuperState"""
+    ##     """Make this state into a SuperState."""
     ##     logger.warning(
     ##         "Converting %s to a SuperState.  This is mostly for playing around and you shouldn't use it in production code.  (Create a SuperState object directly instead.)",
     ##         self,
@@ -249,7 +250,7 @@ class ConditionalJunction(Node):
     ##     self._init_super_state(starting_state)  # type: ignore
 
     def add_to_super_state(self, parent: "SuperState") -> None:
-        """Add this state as a sub-state to a super-state"""
+        """Add this state as a sub-state to a super-state."""
         if not isinstance(parent, SuperState):
             parent.make_super_state(self)
         if parent.starting_state is None:
@@ -258,11 +259,11 @@ class ConditionalJunction(Node):
         ##############################################################
 
     def add_condition(self, condition, state):
-        """Add a condition to the list of conditions to be checked in a ConditionalJunction, along with the State it should transition to if True"""
+        """Add a condition to the list of conditions to be checked in a ConditionalJunction, along with the State it should transition to if True."""
         self.condition_list.append((condition, state))
 
     def evaluate(self):
-        """Evaluate all the conditions in this ConditionalJunction and for the first condition that is True, return the State to transition to"""
+        """Evaluate all the conditions in this ConditionalJunction and for the first condition that is True, return the State to transition to."""
         for i in range(len(self.condition_list)):
             if self.condition_list[i][0]():
                 logging.debug(
@@ -281,7 +282,7 @@ class ConditionalJunction(Node):
 
 
 class StateMachine:
-    """Stores current state, and changes it based on events"""
+    """Stores current state, and changes it based on events."""
 
     all_machines_globally: List["StateMachine"] = []
 
@@ -314,7 +315,7 @@ class StateMachine:
 
     @property
     def current_state(self):
-        """The current state the state machine is in"""
+        """The current state the state machine is in."""
         return self._current_state
 
     def _get_handling_state(self, event, origin_state):
@@ -428,7 +429,7 @@ class StateMachine:
     def transition_directly_to_state(
         self, final_destination, event=None
     ) -> None:
-        """Transition directly to a state, running all the appropriate actions along the way"""
+        """Transition directly to a state, running all the appropriate actions along the way."""
         with self._lock:
             origin_state = self._current_state
 
@@ -479,7 +480,7 @@ class StateMachine:
             )
 
     def process_event(self, event: Event) -> None:
-        """Change to the next state, based on the event passed in"""
+        """Change to the next state, based on the event passed in."""
         with self._lock:
             origin_state = self._current_state
             handling_state = self._get_handling_state(event, origin_state)
