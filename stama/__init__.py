@@ -108,16 +108,6 @@ class State(Node):
 
         self.transitions: Dict[Event, Union["State", Guard]] = {}
 
-        self.on_entry: Callable[[], None] = lambda: logger.debug(
-            "No action set for entering %s.", self
-        )
-        self.on_exit: Callable[[], None] = lambda: logger.debug(
-            "No action set for exiting %s.", self
-        )
-        self.enforce: Callable[[], None] = lambda: logger.debug(
-            "Nothing to enforce on %s.", self
-        )
-
         State.all_states_globally.append(self)
 
     def __repr__(self):
@@ -127,6 +117,15 @@ class State(Node):
     def parent(self):
         """The super-state that this state belongs to."""
         return self._parent
+
+    def on_entry(self):
+        logger.debug("No action set for entering %s.", self)
+
+    def on_exit(self):
+        logger.debug("No action set for exiting %s.", self)
+
+    def enforce(self):
+        logger.debug("Nothing to enforce on %s.", self)
 
     # Don't add type hints to this function.  The `__class__`
     #  reassignment makes type checking not work very well here.
