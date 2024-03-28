@@ -335,9 +335,7 @@ class TestConditionalJunctions(unittest.TestCase):
 
         self.assertEqual(self.kitchen.current_state, self.medium)
 
-        logging.info(
-            "Done: Conditional Junction: Does it check conditions?"
-        )
+        logging.info("Done: Conditional Junction: Does it check conditions?")
 
 
 if __name__ == "__main__":
