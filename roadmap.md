@@ -9,7 +9,7 @@
   then transition directly to the next state, running their `on_exit()`
   methods on the way.  Basically a conditional junction, without any
   conditions, only a default state to transitions to.
-- [ ] Add concurrent states.
+- [ ] Add concurrent states.  (Edited to add: What did I mean by this?)
 - [ ] Add forks and unions.
 - [ ] Add functions to set different actions on States.
 - [ ] Add an analysis method to StateMachine that will test for things
@@ -26,6 +26,8 @@
   mermaid diagram.
 - [ ] Add the ability to output a representation of a StateMachine as a
   PlantUML diagram.
+	- [ ] Possibly use the `__doc__` property to give more information
+	about states.
 - [ ] Add the ability to output a representation of a StateMachine as a
   Graphviz (dot) file?
 - [ ] Add the ability to output a representation of a StateMachine as a
@@ -62,8 +64,8 @@
   instead of `|`?
 - [ ] Use an enum for preferred substate selection?
 - [ ] Create a proper `Node` class, to reduce code reuse.  (This class
-  could be a better bass class for `State`, `ConditionalJunction`, and
-  possibly others.)
+  could be a better bass class for `State`, `Junction`, and possibly
+  others.)
 - [ ] Set up git hooks to handle testing, linting, formatting, etc.
 - [ ] Change line widths to 79, to match PEP8.
 - [ ] Add docstrings to the unit tests?
