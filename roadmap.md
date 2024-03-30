@@ -56,7 +56,6 @@
 	INFO:stama.stama:<SMachine: M0>: Transition done: <ConditionalJunction: CJ0> --> None --> <State: Waiting for a short break>
 
 
-
  Maintenance
 ------------------------------------------------------------------------
 
@@ -76,6 +75,8 @@
   all.  I don't need to see which states don't have enforced actions if
   none of them do.
 	- Are there any other places where this applies?
+- [ ] Use subclasses in tests instead of monkey patching.
+- [ ] Check for monkey patching, and issue a warning if it comes up.
 
 
  Up next
