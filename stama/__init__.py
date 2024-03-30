@@ -323,6 +323,12 @@ class StateMachine:
             if handling_state.parent is not None:
                 handling_state = handling_state.parent  # type: ignore
             else:
+                logger.error(
+                    "No transition defined for "
+                    + str(event)
+                    + " in "
+                    + str(self._current_state)
+                )
                 raise SMEventNotHandledException(
                     "No transition defined for "
                     + str(event)
