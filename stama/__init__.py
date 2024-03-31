@@ -80,7 +80,7 @@ class Guard:
 
 
 class Node:  # pylint: disable=too-few-public-methods
-    """The base class for states (and similar nodes) that can be tranistioned to."""
+    """The base class for states (and similar nodes) that can be transitioned to."""
 
 
 class State(Node):
